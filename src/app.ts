@@ -70,11 +70,11 @@ export function createApp({ config, store, limiter, now = Date.now }: Deps) {
     const body = await c.req.parseBody();
     const password = typeof body.password === 'string' ? body.password.slice(0, 200) : '';
     // Kedua perbandingan selalu dijalankan agar waktu tidak membedakan peran.
-    const [isAdmin, isViewer] = await Promise.all([
+    const [isAdmin, isOwner] = await Promise.all([
       safeEqual(password, config.adminPassword),
-      safeEqual(password, config.viewerPassword),
+      safeEqual(password, config.ownerPassword),
     ]);
-    const role: Role | null = isAdmin ? 'admin' : isViewer ? 'viewer' : null;
+    const role: Role | null = isAdmin ? 'admin' : isOwner ? 'owner' : null;
 
     if (!role) {
       limiter.recordFailure(key);

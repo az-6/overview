@@ -4,7 +4,7 @@ import { createMemoryBackend } from '../src/store/memory-backend';
 import { createReportStore } from '../src/store/report-store';
 
 export const ADMIN = 'admin-password-123';
-export const VIEWER = 'viewer-password-123';
+export const OWNER = 'owner-password-123';
 export const SECRET = 's'.repeat(32);
 export const ORIGIN = 'http://localhost';
 
@@ -12,7 +12,7 @@ export function makeApp(overrides: Partial<Deps> = {}) {
   const store = createReportStore(createMemoryBackend());
   const limiter = createLoginLimiter();
   const app = createApp({
-    config: { adminPassword: ADMIN, viewerPassword: VIEWER, sessionSecret: SECRET },
+    config: { adminPassword: ADMIN, ownerPassword: OWNER, sessionSecret: SECRET },
     store,
     limiter,
     ...overrides,

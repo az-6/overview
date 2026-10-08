@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'viewer';
+export type Role = 'admin' | 'owner';
 export const SESSION_TTL_SECONDS = 12 * 60 * 60;
 
 const encoder = new TextEncoder();
@@ -32,7 +32,7 @@ export async function readSession(token: string, secret: string, now = Date.now(
 
     const data = JSON.parse(decoder.decode(fromBase64Url(payload))) as { r?: unknown; exp?: unknown };
     if (typeof data.exp !== 'number' || data.exp * 1000 <= now) return null;
-    return data.r === 'admin' || data.r === 'viewer' ? data.r : null;
+    return data.r === 'admin' || data.r === 'owner' ? data.r : null;
   } catch {
     return null;
   }

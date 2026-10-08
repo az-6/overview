@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ADMIN, get, makeApp, post, sessionCookie, VIEWER } from './helpers';
+import { ADMIN, get, makeApp, post, sessionCookie, OWNER } from './helpers';
 
 const form = (fields: { title?: string; name?: string; content?: BlobPart }) => {
   const data = new FormData();
@@ -9,7 +9,7 @@ const form = (fields: { title?: string; name?: string; content?: BlobPart }) => 
 };
 
 describe('unggah', () => {
-  it('admin mengunggah laporan lalu laporan muncul di daftar dan dapat dibuka pegawai', async () => {
+  it('admin mengunggah laporan lalu laporan muncul di daftar dan dapat dibuka owner', async () => {
     const { app, store } = makeApp();
     const admin = await sessionCookie(app, ADMIN);
     const res = await post(app, '/admin/reports', admin, form({ title: '  Laporan Oktober  ', name: 'oktober.html', content: '<h1>Okt</h1>' }));
@@ -20,9 +20,9 @@ describe('unggah', () => {
     expect(meta.title).toBe('Laporan Oktober');
     expect((await store.get(meta.id))?.html).toBe('<h1>Okt</h1>');
 
-    const viewer = await sessionCookie(app, VIEWER);
-    expect(await (await get(app, '/', viewer)).text()).toContain('Laporan Oktober');
-    expect(await (await get(app, `/raw/${meta.id}`, viewer)).text()).toBe('<h1>Okt</h1>');
+    const owner = await sessionCookie(app, OWNER);
+    expect(await (await get(app, '/', owner)).text()).toContain('Laporan Oktober');
+    expect(await (await get(app, `/raw/${meta.id}`, owner)).text()).toBe('<h1>Okt</h1>');
     expect(await (await get(app, '/admin?added=1', admin)).text()).toContain('Laporan ditambahkan');
   });
 
@@ -83,12 +83,12 @@ describe('hapus', () => {
 });
 
 describe('otorisasi dan CSRF', () => {
-  it('pegawai tidak bisa mengunggah atau menghapus', async () => {
+  it('owner tidak bisa mengunggah atau menghapus', async () => {
     const { app, store } = makeApp();
     const meta = await store.add({ title: 'Milik admin', html: '<p>x</p>' });
-    const viewer = await sessionCookie(app, VIEWER);
-    expect((await post(app, '/admin/reports', viewer, form({ title: 'A', name: 'a.html' }))).status).toBe(403);
-    expect((await post(app, `/admin/reports/${meta.id}/delete`, viewer)).status).toBe(403);
+    const owner = await sessionCookie(app, OWNER);
+    expect((await post(app, '/admin/reports', owner, form({ title: 'A', name: 'a.html' }))).status).toBe(403);
+    expect((await post(app, `/admin/reports/${meta.id}/delete`, owner)).status).toBe(403);
     expect(await store.list()).toHaveLength(1);
   });
 

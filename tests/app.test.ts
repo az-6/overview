@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createSession } from '../src/session';
-import { ADMIN, get, login, makeApp, ORIGIN, post, SECRET, sessionCookie, VIEWER } from './helpers';
+import { ADMIN, get, login, makeApp, ORIGIN, post, SECRET, sessionCookie, OWNER } from './helpers';
 
 const hostile = '<script>fetch("/admin")</script><p>isi laporan</p>';
 
@@ -9,7 +9,7 @@ describe('login', () => {
     const { app } = makeApp();
     expect((await get(app, '/login')).status).toBe(200);
 
-    const res = await login(app, VIEWER);
+    const res = await login(app, OWNER);
     expect(res.status).toBe(303);
     expect(res.headers.get('location')).toBe('/');
     const cookie = res.headers.get('set-cookie')!;
@@ -41,7 +41,7 @@ describe('login', () => {
 
   it('logout menghapus sesi', async () => {
     const { app } = makeApp();
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     const res = await post(app, '/logout', cookie);
     expect(res.status).toBe(303);
     expect(res.headers.get('set-cookie')).toMatch(/Max-Age=0|Expires=/i);
@@ -65,8 +65,8 @@ describe('akses tanpa sesi', () => {
 
   it('token yang diubah dianggap tanpa sesi', async () => {
     const { app } = makeApp();
-    const viewer = await sessionCookie(app, VIEWER);
-    const [, signature] = viewer.split('=')[1].split('.');
+    const owner = await sessionCookie(app, OWNER);
+    const [, signature] = owner.split('=')[1].split('.');
     const payload = btoa(JSON.stringify({ r: 'admin', exp: 9_999_999_999 })).replace(/=+$/, '');
     const forged = `__Host-overview_session=${payload}.${signature}`;
     expect((await get(app, '/admin', forged)).status).toBe(303);
@@ -75,7 +75,7 @@ describe('akses tanpa sesi', () => {
   it('sesi kedaluwarsa dan sesi bertanda tangan rahasia lain ditolak', async () => {
     let t = 1_700_000_000_000;
     const { app } = makeApp({ now: () => t });
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     expect((await get(app, '/', cookie)).status).toBe(200);
     t += 13 * 3600 * 1000;
     expect((await get(app, '/', cookie)).status).toBe(303);
@@ -85,11 +85,11 @@ describe('akses tanpa sesi', () => {
   });
 });
 
-describe('daftar, viewer, dan raw', () => {
-  it('daftar menampilkan judul ter-escape dan tidak menampilkan tombol admin untuk pegawai', async () => {
+describe('daftar, owner, dan raw', () => {
+  it('daftar menampilkan judul ter-escape dan tidak menampilkan tombol admin untuk owner', async () => {
     const { app, store } = makeApp();
     await store.add({ title: '<script>alert(1)</script>', html: '<p>x</p>' });
-    const body = await (await get(app, '/', await sessionCookie(app, VIEWER))).text();
+    const body = await (await get(app, '/', await sessionCookie(app, OWNER))).text();
     expect(body).not.toContain('<script>alert(1)</script>');
     expect(body).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(body).not.toContain('/admin');
@@ -100,10 +100,10 @@ describe('daftar, viewer, dan raw', () => {
     expect(await (await get(app, '/', await sessionCookie(app, ADMIN))).text()).toContain('href="/admin"');
   });
 
-  it('viewer memuat iframe ber-sandbox tanpa allow-same-origin', async () => {
+  it('owner memuat iframe ber-sandbox tanpa allow-same-origin', async () => {
     const { app, store } = makeApp();
     const meta = await store.add({ title: 'Laporan', html: hostile });
-    const res = await get(app, `/r/${meta.id}`, await sessionCookie(app, VIEWER));
+    const res = await get(app, `/r/${meta.id}`, await sessionCookie(app, OWNER));
     const body = await res.text();
     expect(res.status).toBe(200);
     expect(body).toMatch(new RegExp(`<iframe[^>]*src="/raw/${meta.id}"`));
@@ -115,7 +115,7 @@ describe('daftar, viewer, dan raw', () => {
   it('raw mengirim HTML apa adanya dengan CSP sandbox dan tanpa cache', async () => {
     const { app, store } = makeApp();
     const meta = await store.add({ title: 'Laporan', html: hostile });
-    const res = await get(app, `/raw/${meta.id}`, await sessionCookie(app, VIEWER));
+    const res = await get(app, `/raw/${meta.id}`, await sessionCookie(app, OWNER));
     expect(res.status).toBe(200);
     expect(await res.text()).toBe(hostile);
     const csp = res.headers.get('content-security-policy')!;
@@ -130,7 +130,7 @@ describe('daftar, viewer, dan raw', () => {
 
   it.each(['/r/', '/raw/'])('%s dengan ID tidak valid atau tidak ada menghasilkan 404', async (prefix) => {
     const { app } = makeApp();
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     for (const id of ['tidak-ada-1', '..%2Findex', '%2e%2e%2findex.json', 'a'.repeat(40)]) {
       expect((await get(app, `${prefix}${id}`, cookie)).status).toBe(404);
     }
@@ -138,7 +138,7 @@ describe('daftar, viewer, dan raw', () => {
 
   it('semua respons membawa header keamanan, halaman aplikasi memakai CSP ketat', async () => {
     const { app } = makeApp();
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     for (const res of [await get(app, '/login'), await get(app, '/', cookie), await get(app, '/tidak-ada', cookie)]) {
       expect(res.headers.get('x-robots-tag')).toBe('noindex, nofollow');
       expect(res.headers.get('referrer-policy')).toBe('no-referrer');
@@ -163,9 +163,9 @@ describe('daftar, viewer, dan raw', () => {
     expect(res.headers.get('set-cookie')).toBeNull();
   });
 
-  it('pegawai mendapat 403 di rute admin', async () => {
+  it('owner mendapat 403 di rute admin', async () => {
     const { app } = makeApp();
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     expect((await get(app, '/admin', cookie)).status).toBe(403);
     expect(ORIGIN).toBe('http://localhost');
     expect(SECRET).toHaveLength(32);

@@ -7,7 +7,7 @@
 
 ## 1. Ringkasan
 
-Setelah login, pengguna melihat dasbor **siklus produksi** seperti contoh `investor/index.html`: halaman Ringkasan dan satu halaman rinci per siklus. **Pegawai** hanya melihat. **Admin** juga melihat tombol **Tambah siklus**, mengunggah satu berkas JSON per siklus, menimpa siklus yang sudah ada, dan menghapus siklus. Semua halaman dirender di server oleh Hono tanpa JavaScript di browser. Fitur unggah dan sajian laporan HTML dihapus seluruhnya.
+Setelah login, pengguna melihat dasbor **siklus produksi** seperti contoh `investor/index.html`: halaman Ringkasan dan satu halaman rinci per siklus. **owner** hanya melihat. **Admin** juga melihat tombol **Tambah siklus**, mengunggah satu berkas JSON per siklus, menimpa siklus yang sudah ada, dan menghapus siklus. Semua halaman dirender di server oleh Hono tanpa JavaScript di browser. Fitur unggah dan sajian laporan HTML dihapus seluruhnya.
 
 Ringkasan juga memuat bagian **Dana investor** (dana yang diterima, terpakai untuk biaya produksi, kembali dari penjualan, sisa, dan imbal hasil terhadap dana), seperti contoh. Admin menambah dan menghapus entri dana lewat form sederhana di `/admin` (tanggal, jumlah rupiah, keterangan). Tanpa entri dana, bagian itu tidak ditampilkan.
 
@@ -16,7 +16,7 @@ Yang tidak berubah: login dua sandi, sesi bertanda tangan, pembatas login, Verce
 ## 2. Tujuan dan batas
 
 **Tujuan**
-- Pegawai dan admin melihat Ringkasan dan rincian tiap siklus setelah login.
+- owner dan admin melihat Ringkasan dan rincian tiap siklus setelah login.
 - Admin menambah, menimpa, dan menghapus siklus, serta menambah dan menghapus entri dana investor, tanpa menyentuh kode atau deploy ulang.
 - Data tidak dapat dibuka tanpa login dan tidak muncul di mesin pencari.
 - Isi data yang diunggah (nama, catatan, dan sebagainya) tidak pernah dapat menjalankan skrip atau mengubah halaman.
@@ -28,7 +28,7 @@ Yang tidak berubah: login dua sandi, sesi bertanda tangan, pembatas login, Verce
 
 **Asumsi**
 - Data siklus kecil (puluhan siklus, masing-masing puluhan ekor). Satu dokumen JSON cukup.
-- Pegawai boleh melihat biaya, pendapatan, dan laba (sesuai contoh pemilik).
+- owner boleh melihat biaya, pendapatan, dan laba (sesuai contoh pemilik).
 - Data contoh di `investor/siklus.js` fiktif.
 
 ## 3. Arsitektur
@@ -58,16 +58,16 @@ Aplikasi Hono, `createApp(deps)` tetap menerima konfigurasi, penyimpanan, dan pe
 | `GET /login`, `POST /login` | publik | Seperti sebelumnya, ditambah logo |
 | `GET /robots.txt` | publik | `Disallow: /` |
 | `GET /aset/logo-putih.png` | publik | Logo (statis, tidak rahasia), `Cache-Control: public, max-age=86400` |
-| `GET /` | admin, pegawai | Ringkasan. Admin melihat tombol "Tambah siklus" yang menuju `/admin` |
-| `GET /siklus/:no` | admin, pegawai | Rincian satu siklus; nomor tidak ada atau tidak valid: 404 |
+| `GET /` | admin, owner | Ringkasan. Admin melihat tombol "Tambah siklus" yang menuju `/admin` |
+| `GET /siklus/:no` | admin, owner | Rincian satu siklus; nomor tidak ada atau tidak valid: 404 |
 | `GET /admin` | admin | Form unggah siklus, daftar siklus dengan tombol Hapus, form tambah dana, daftar dana dengan tombol Hapus |
 | `POST /admin/siklus` | admin | Unggah siklus |
 | `POST /admin/siklus/:no/hapus` | admin | Hapus siklus |
 | `POST /admin/dana` | admin | Tambah entri dana |
 | `POST /admin/dana/:id/hapus` | admin | Hapus entri dana (`:id` harus cocok `^[A-Za-z0-9_-]{8,32}$` sebelum menyentuh penyimpanan) |
-| `POST /logout` | admin, pegawai | Keluar |
+| `POST /logout` | admin, owner | Keluar |
 
-Aturan akses tidak berubah: tanpa sesi `GET` dialihkan ke `/login` (303) dan metode lain mendapat 401; pegawai di rute admin mendapat 403; semua `POST` mewajibkan `Origin` yang sama dengan host aplikasi (hilang atau berbeda: 403). Nomor siklus di URL harus cocok `^[1-9][0-9]{0,3}$` (1 sampai 9999) sebelum menyentuh penyimpanan.
+Aturan akses tidak berubah: tanpa sesi `GET` dialihkan ke `/login` (303) dan metode lain mendapat 401; owner di rute admin mendapat 403; semua `POST` mewajibkan `Origin` yang sama dengan host aplikasi (hilang atau berbeda: 403). Nomor siklus di URL harus cocok `^[1-9][0-9]{0,3}$` (1 sampai 9999) sebelum menyentuh penyimpanan.
 
 ## 5. Halaman
 
@@ -75,7 +75,7 @@ Tampilan mengikuti `investor/index.html` (pita biru dengan logo, navigasi bergay
 
 - **Ringkasan (`/`)**: label "Ringkasan · N siklus produksi"; judul seperti contoh (kg loin, jumlah siklus, laba atau rugi); empat kartu angka (ikan utuh, loin dihasilkan dan yield, pendapatan dan biaya, laba atau rugi dan margin); bagian **Dana investor** bila ada entri dana (judul "Sisa dana Rp X dari Rp Y yang diterima", empat angka: dana diterima, terpakai untuk biaya produksi, kembali dari penjualan, imbal hasil terhadap dana dengan dua desimal; bilah pemakaian dana, yaitu biaya dibagi dana dibatasi 0 sampai 100 %; tabel entri bila lebih dari satu, kalimat satu baris bila hanya satu; catatan bahwa sisa dihitung dengan anggapan semua penjualan dibayar dan semua biaya lunas serta biaya di luar siklus belum termasuk); dua panel batang (yield dengan garis rencana 60 %, margin laba); tabel semua siklus dengan baris total. Judul siklus pada tabel adalah tautan ke `/siklus/:no`; tidak ada `onclick`. Tanpa siklus: judul "Belum ada siklus produksi" dan kalimat penjelas; admin melihat tombol Tambah siklus.
 - **Rincian (`/siklus/:no`)**: kartu angka siklus, grafik yield per ekor (batang HTML/CSS dengan atribut `title`), tabel pendapatan dan biaya, struktur biaya, daftar langkah tindak lanjut dengan status "selesai" atau "berjalan", dan tautan sebelumnya, ringkasan, berikutnya.
-- **Navigasi**: chip "Ringkasan" dan satu chip per siklus; chip aktif memakai `aria-current="page"`. Pegawai dan admin melihat navigasi yang sama; admin tambahan melihat tautan "Kelola".
+- **Navigasi**: chip "Ringkasan" dan satu chip per siklus; chip aktif memakai `aria-current="page"`. owner dan admin melihat navigasi yang sama; admin tambahan melihat tautan "Kelola".
 - **Admin (`/admin`)**: form unggah (berkas `.json`, kotak centang "Timpa jika nomor sudah ada") dan tabel siklus dengan tombol Hapus per baris; di bawahnya form "Tambah dana" (tanggal, jumlah, keterangan) dan tabel dana dengan tombol Hapus per baris. Teks bantuan menyebut format dan batas ukuran.
 - Font: tumpukan font sistem (IBM Plex dari Google tidak dimuat). Tanggal diformat `id-ID` dengan zona `Asia/Jakarta`, angka dan rupiah dengan pemformat yang sama dengan `hitung.js`.
 
@@ -156,7 +156,7 @@ Vitest lewat `app.request()`; tanpa jaringan.
 - `parseDana`: setiap aturan 6a dengan satu kasus gagal dan satu batas yang lolos ("1.367.000.000" diterima, jumlah 13 angka, keterangan tepat 200); tanggal 30 Februari, "1,5", "-5", "0", "abc" ditolak.
 - `siklus-store.ts`: urutan, tambah, tolak duplikat tanpa `timpa`, ganti dengan `timpa`, hapus, nomor tidak valid tidak menyentuh backend, dokumen rusak menjadi galat.
 - `dana-store.ts`: urutan menurut tanggal, tambah, hapus, ID tidak valid tidak menyentuh backend, batas 200 entri, dokumen rusak menjadi galat.
-- Aplikasi: tanpa sesi ditolak di setiap rute; pegawai melihat Ringkasan dan rincian tetapi tidak ada tombol Tambah siklus dan mendapat 403 di `/admin` dan semua `POST` admin; admin melihat tombol; `Origin` hilang atau salah ditolak; unggah sukses, ditolak karena duplikat, ditimpa, dihapus; dana ditambah dan dihapus oleh admin, ditolak 403 untuk pegawai dan untuk `POST` tanpa Origin sah, bagian Dana investor tampil di Ringkasan hanya bila ada dana dan sama untuk kedua peran; keterangan dana bermusuhan ter-escape; semua teks bermusuhan (`<script>`, `"><img onerror>`) pada pembeli, nama pos, tag, grade, judul dan isi langkah muncul ter-escape di Ringkasan, rincian, dan admin; header keamanan dan CSP baru ada di semua respons; token sesi yang diubah ditolak; logo dapat diambil tanpa sesi dan tidak membawa cookie sesi.
+- Aplikasi: tanpa sesi ditolak di setiap rute; owner melihat Ringkasan dan rincian tetapi tidak ada tombol Tambah siklus dan mendapat 403 di `/admin` dan semua `POST` admin; admin melihat tombol; `Origin` hilang atau salah ditolak; unggah sukses, ditolak karena duplikat, ditimpa, dihapus; dana ditambah dan dihapus oleh admin, ditolak 403 untuk owner dan untuk `POST` tanpa Origin sah, bagian Dana investor tampil di Ringkasan hanya bila ada dana dan sama untuk kedua peran; keterangan dana bermusuhan ter-escape; semua teks bermusuhan (`<script>`, `"><img onerror>`) pada pembeli, nama pos, tag, grade, judul dan isi langkah muncul ter-escape di Ringkasan, rincian, dan admin; header keamanan dan CSP baru ada di semua respons; token sesi yang diubah ditolak; logo dapat diambil tanpa sesi dan tidak membawa cookie sesi.
 - Bootstrap: 503 saat konfigurasi lemah tetap lolos (tes Task 7).
 - Smoke lokal dengan server nyata dan `curl`.
 
@@ -164,13 +164,13 @@ Tidak bisa diuji otomatis di sini: tampilan di browser sungguhan (tata letak, mo
 
 ## 11. Rilis
 
-Tidak berubah dari spec lama bagian 10 (langkah 1 sampai 3 di sesi implementasi tanpa menyentuh akun; langkah 4 sampai 8 menunggu konfirmasi pemilik). Pemeriksaan manual langkah 8 diganti: login dua peran; unggah siklus dummy; periksa Ringkasan dan rincian; pastikan pegawai tidak melihat tombol Tambah siklus dan mendapat 403 di `/admin`; timpa dan hapus siklus dummy; tambah dan hapus entri dana dummy dan periksa bagian Dana investor; tambah aturan rate limit Firewall pada `/login`.
+Tidak berubah dari spec lama bagian 10 (langkah 1 sampai 3 di sesi implementasi tanpa menyentuh akun; langkah 4 sampai 8 menunggu konfirmasi pemilik). Pemeriksaan manual langkah 8 diganti: login dua peran; unggah siklus dummy; periksa Ringkasan dan rincian; pastikan owner tidak melihat tombol Tambah siklus dan mendapat 403 di `/admin`; timpa dan hapus siklus dummy; tambah dan hapus entri dana dummy dan periksa bagian Dana investor; tambah aturan rate limit Firewall pada `/login`.
 
 ## 12. Risiko
 
 - Pembatas login hanya *best effort*.
 - Satu sandi dibagi banyak orang: bocor ke satu orang berarti ganti sandi untuk semua.
-- Pegawai melihat angka keuangan lengkap, termasuk jumlah dana investor, sisa dana, dan imbal hasil.
+- owner melihat angka keuangan lengkap, termasuk jumlah dana investor, sisa dana, dan imbal hasil.
 - Sisa dana adalah perkiraan (anggapan semua penjualan dibayar dan semua biaya lunas; biaya di luar siklus belum termasuk); catatan itu ditampilkan di halaman.
 - Dokumen tunggal bisa saling menimpa bila dua admin mengunggah bersamaan.
 - Admin perlu menyiapkan JSON sendiri; kesalahan format hanya terlihat setelah unggah (pesan galat per baris mengurangi ini).

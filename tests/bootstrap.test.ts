@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../src/bootstrap';
 
-const good = { ADMIN_PASSWORD: 'admin-password-123', VIEWER_PASSWORD: 'viewer-password-123', SESSION_SECRET: 's'.repeat(32) };
+const good = { ADMIN_PASSWORD: 'admin-password-123', OWNER_PASSWORD: 'owner-password-123', SESSION_SECRET: 's'.repeat(32) };
 
 beforeEach(() => { vi.spyOn(console, 'error').mockImplementation(() => {}); });
 afterEach(() => { vi.restoreAllMocks(); });
@@ -11,7 +11,7 @@ describe('buildApp', () => {
     ['tanpa env sama sekali', {}],
     ['sandi admin terlalu pendek', { ...good, ADMIN_PASSWORD: 'pendek' }],
     ['rahasia sesi terlalu pendek', { ...good, SESSION_SECRET: 'x' }],
-    ['kedua sandi sama', { ...good, VIEWER_PASSWORD: good.ADMIN_PASSWORD }],
+    ['kedua sandi sama', { ...good, OWNER_PASSWORD: good.ADMIN_PASSWORD }],
     ['di Vercel tanpa token Blob', { ...good, VERCEL: '1' }],
   ])('menjawab 503 di semua rute: %s', async (_label, env) => {
     const app = buildApp(env);

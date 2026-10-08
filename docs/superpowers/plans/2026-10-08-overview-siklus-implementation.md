@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Mengganti portal laporan HTML dengan dasbor siklus produksi (Ringkasan, rincian siklus, Dana investor): pegawai hanya melihat, admin menambah/menimpa/menghapus siklus lewat unggah JSON dan menambah/menghapus dana lewat form, di `overview.katalislintasglobal.com`.
+**Goal:** Mengganti portal laporan HTML dengan dasbor siklus produksi (Ringkasan, rincian siklus, Dana investor): owner hanya melihat, admin menambah/menimpa/menghapus siklus lewat unggah JSON dan menambah/menghapus dana lewat form, di `overview.katalislintasglobal.com`.
 
 **Architecture:** Dibangun di atas Task 1–7 rencana lama (konfigurasi, sandi, sesi, pembatas login, `ObjectBackend` memori/berkas/Blob, `bootstrap`). Dua store baru (`SiklusStore`, `DanaStore`) memakai `ObjectBackend` yang sama; rumus dari `investor/hitung.js` diporting ke TypeScript; semua halaman dirender di server dengan `hono/html` tanpa JavaScript di browser. Fitur laporan HTML dihapus.
 
@@ -17,7 +17,7 @@
 - Semua teks antarmuka, pesan galat, dan pesan commit dalam bahasa Indonesia. Setiap commit: `git commit -m "<pesan>" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"`.
 - Tidak ada JavaScript di sisi browser pada halaman aplikasi: tidak ada `<script>`, `onclick`, atau `innerHTML`. Hanya form HTML dan tautan.
 - Tidak ada sandi, rahasia, atau nilai env asli di repo, log, atau tes selain nilai uji yang jelas palsu.
-- Env var dan sesi tidak berubah: `ADMIN_PASSWORD` (>= 12 karakter), `VIEWER_PASSWORD` (>= 12), `SESSION_SECRET` (>= 32), kedua sandi berbeda; konfigurasi lemah atau hilang berarti 503 di semua rute dan log hanya memuat nama variabel. Cookie `__Host-overview_session`, HttpOnly, Secure, SameSite=Strict, Path=/, 43200 detik.
+- Env var dan sesi tidak berubah: `ADMIN_PASSWORD` (>= 12 karakter), `OWNER_PASSWORD` (>= 12), `SESSION_SECRET` (>= 32), kedua sandi berbeda; konfigurasi lemah atau hilang berarti 503 di semua rute dan log hanya memuat nama variabel. Cookie `__Host-overview_session`, HttpOnly, Secure, SameSite=Strict, Path=/, 43200 detik.
 - Batas: berkas siklus `.json` paling besar 512 KB (524288 byte), UTF-8 valid; nomor siklus di URL harus cocok `^[1-9][0-9]{0,3}$` (1 sampai 9999); ID dana harus cocok `^[A-Za-z0-9_-]{8,32}$`; jumlah dana 1 sampai 13 angka; paling banyak 200 entri dana; teks paling banyak 200 karakter (`isi` langkah 1000); paling banyak 500 ekor dan 50 baris untuk tiap daftar lain; daftar galat unggahan dipotong pada 10 pesan.
 - CSP halaman aplikasi persis: `default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`. Header lain seperti Task 5 lama (`Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security`).
 - Tidak ada pembuatan project Vercel, Blob store, env var di Vercel, domain, DNS, repo GitHub, push, atau deploy. Itu langkah rilis spec lama bagian 10 dan menunggu konfirmasi pemilik.
@@ -28,8 +28,8 @@
 ## Review Focus
 
 1. **Data bermusuhan di berkas siklus dan form dana** (`<script>`, `"><img onerror>` pada pembeli, nama pos, tag, grade, judul dan isi langkah, keterangan dana): harus tampil ter-escape di Ringkasan, rincian, dan admin, dan tidak pernah ada `<script` di halaman mana pun. Tes: Task 5 dan Task 7.
-2. **Token sesi diubah** (peran `viewer` diganti `admin`, atau tanda tangan/rahasia lain, atau kedaluwarsa): diperlakukan sebagai tanpa sesi. Tes: Task 6.
-3. **POST lintas situs** dengan cookie admin yang sah (Origin berbeda atau hilang), dan pegawai di semua `POST` admin: unggah, hapus siklus, tambah dan hapus dana ditolak dan tidak ada yang berubah. Tes: Task 7.
+2. **Token sesi diubah** (peran `owner` diganti `admin`, atau tanda tangan/rahasia lain, atau kedaluwarsa): diperlakukan sebagai tanpa sesi. Tes: Task 6.
+3. **POST lintas situs** dengan cookie admin yang sah (Origin berbeda atau hilang), dan owner di semua `POST` admin: unggah, hapus siklus, tambah dan hapus dana ditolak dan tidak ada yang berubah. Tes: Task 7.
 4. **Berkas unggahan bermusuhan**: kunci `__proto__`/`constructor`, angka tak berhingga atau raksasa, 5 MB, BOM UTF-8 dari Notepad/Excel, bukan UTF-8, JSON berupa larik atau `null`: ditolak dengan pesan atau dinormalisasi, tidak pernah 500. Tes: Task 2 dan Task 7.
 5. **Nomor siklus atau ID dana di URL** berisi `../`, desimal, nol di depan, atau di luar pola: 404 tanpa menyentuh penyimpanan. Tes: Task 3, Task 6, dan Task 7.
 
@@ -1214,8 +1214,8 @@ describe('shell', () => {
     expect(h).not.toContain('/admin');
   });
 
-  it('pegawai melihat Keluar tetapi tidak ada tautan admin', async () => {
-    const h = await teks(shell({ ...dasar, peran: 'viewer' }));
+  it('owner melihat Keluar tetapi tidak ada tautan admin', async () => {
+    const h = await teks(shell({ ...dasar, peran: 'owner' }));
     expect(h).toContain('action="/logout"');
     expect(h).not.toContain('/admin');
   });
@@ -1599,7 +1599,7 @@ describe('data bermusuhan di semua halaman', () => {
     const danaJahat = [dana(1_000_000, '2026-10-06', jahat)];
     for (const h of [
       await teks(ringkasanPage({ daftar, dana: danaJahat, peran: 'admin' })),
-      await teks(detailPage({ daftar, siklus: daftar[0], peran: 'viewer' })),
+      await teks(detailPage({ daftar, siklus: daftar[0], peran: 'owner' })),
       await teks(adminPage({ daftar, dana: danaJahat, galatSiklus: [jahat], galatDana: [jahat], pesan: jahat })),
     ]) {
       aman(h);
@@ -1609,7 +1609,7 @@ describe('data bermusuhan di semua halaman', () => {
 
   it('atribut title pada batang yield tidak bisa keluar dari tanda kutip', async () => {
     const siklus = siklusContoh({ ekor: [{ tag: '"><b>', kg: 44, loinKg: 27.75, grade: '"x' }] });
-    const h = await teks(detailPage({ daftar: [siklus], siklus, peran: 'viewer' }));
+    const h = await teks(detailPage({ daftar: [siklus], siklus, peran: 'owner' }));
     expect(h).not.toContain('"><b>');
     expect(h).toContain('&quot;&gt;&lt;b&gt;');
   });
@@ -1618,20 +1618,20 @@ describe('data bermusuhan di semua halaman', () => {
 describe('ringkasanPage', () => {
   it('tanpa siklus dan dana: judul kosong, tanpa NaN, tombol hanya untuk admin', async () => {
     const admin = await teks(ringkasanPage({ daftar: [], dana: [], peran: 'admin' }));
-    const pegawai = await teks(ringkasanPage({ daftar: [], dana: [], peran: 'viewer' }));
-    for (const h of [admin, pegawai]) {
+    const owner = await teks(ringkasanPage({ daftar: [], dana: [], peran: 'owner' }));
+    for (const h of [admin, owner]) {
       aman(h);
       expect(h).toContain('Belum ada siklus produksi');
       expect(h).not.toContain('Dana investor');
     }
     expect(admin).toContain('Tambah siklus');
     expect(admin).toContain('href="/admin"');
-    expect(pegawai).not.toContain('Tambah siklus');
-    expect(pegawai).not.toContain('/admin');
+    expect(owner).not.toContain('Tambah siklus');
+    expect(owner).not.toContain('/admin');
   });
 
   it('dengan siklus: judul, kartu angka, tautan ke rincian, dan tanpa onclick', async () => {
-    const h = await teks(ringkasanPage({ daftar: [contoh], dana: [], peran: 'viewer' }));
+    const h = await teks(ringkasanPage({ daftar: [contoh], dana: [], peran: 'owner' }));
     aman(h);
     expect(h).toContain('Ringkasan · 1 siklus produksi');
     expect(h).toContain('laba Rp 4.503.468');
@@ -1651,8 +1651,8 @@ describe('ringkasanPage', () => {
   it('bagian Dana investor: angka sesuai contoh pemilik, sama untuk kedua peran', async () => {
     const entri = [dana(1367000000)];
     const admin = await teks(ringkasanPage({ daftar: [contoh], dana: entri, peran: 'admin' }));
-    const pegawai = await teks(ringkasanPage({ daftar: [contoh], dana: entri, peran: 'viewer' }));
-    for (const h of [admin, pegawai]) {
+    const owner = await teks(ringkasanPage({ daftar: [contoh], dana: entri, peran: 'owner' }));
+    for (const h of [admin, owner]) {
       aman(h);
       expect(h).toContain('Dana investor');
       expect(h).toContain('Sisa dana Rp 1.371.503.468 dari Rp 1.367.000.000 yang diterima');
@@ -1663,7 +1663,7 @@ describe('ringkasanPage', () => {
   });
 
   it('beberapa entri dana tampil sebagai tabel, urutan sesuai masukan', async () => {
-    const h = await teks(ringkasanPage({ daftar: [contoh], dana: [dana(100, '2026-10-05', 'Tahap satu'), dana(200, '2026-10-07', 'Tahap dua')], peran: 'viewer' }));
+    const h = await teks(ringkasanPage({ daftar: [contoh], dana: [dana(100, '2026-10-05', 'Tahap satu'), dana(200, '2026-10-07', 'Tahap dua')], peran: 'owner' }));
     expect(h).toContain('Tahap satu');
     expect(h).toContain('Tahap dua');
     expect(h.indexOf('Tahap satu')).toBeLessThan(h.indexOf('Tahap dua'));
@@ -1671,20 +1671,20 @@ describe('ringkasanPage', () => {
   });
 
   it('bilah pemakaian dana dibatasi 100 % bila biaya melebihi dana', async () => {
-    const h = await teks(ringkasanPage({ daftar: [contoh], dana: [dana(1)], peran: 'viewer' }));
+    const h = await teks(ringkasanPage({ daftar: [contoh], dana: [dana(1)], peran: 'owner' }));
     expect(h).toContain('style="width:100%"');
     aman(h);
   });
 
   it('dana tanpa siklus tetap tampil tanpa NaN', async () => {
-    const h = await teks(ringkasanPage({ daftar: [], dana: [dana(5000)], peran: 'viewer' }));
+    const h = await teks(ringkasanPage({ daftar: [], dana: [dana(5000)], peran: 'owner' }));
     aman(h);
     expect(h).toContain('Sisa dana Rp 5.000 dari Rp 5.000 yang diterima');
   });
 
   it('rugi memakai kata Rugi dan kelas turun', async () => {
     const rugi = siklusContoh({ biaya: [{ nama: 'Ikan', rp: 99_000_000 }] });
-    const h = await teks(ringkasanPage({ daftar: [rugi], dana: [], peran: 'viewer' }));
+    const h = await teks(ringkasanPage({ daftar: [rugi], dana: [], peran: 'owner' }));
     expect(h).toContain('rugi Rp');
     expect(h).toContain('class="v turun"');
   });
@@ -1692,7 +1692,7 @@ describe('ringkasanPage', () => {
 
 describe('detailPage', () => {
   it('menampilkan judul, tabel keuangan, struktur biaya, dan langkah', async () => {
-    const h = await teks(detailPage({ daftar: [contoh], siklus: contoh, peran: 'viewer' }));
+    const h = await teks(detailPage({ daftar: [contoh], siklus: contoh, peran: 'owner' }));
     aman(h);
     expect(h).toContain('Siklus 1: yield 62,6 %, laba Rp 4.503.468');
     expect(h).toContain('11 ekor tuna menjadi');
@@ -1707,17 +1707,17 @@ describe('detailPage', () => {
 
   it('tautan siklus sebelumnya dan berikutnya', async () => {
     const daftar = [siklusContoh({ no: 1 }), siklusContoh({ no: 2 }), siklusContoh({ no: 3 })];
-    const tengah = await teks(detailPage({ daftar, siklus: daftar[1], peran: 'viewer' }));
+    const tengah = await teks(detailPage({ daftar, siklus: daftar[1], peran: 'owner' }));
     expect(tengah).toContain('← Siklus 1');
     expect(tengah).toContain('Siklus 3 →');
-    const pertama = await teks(detailPage({ daftar, siklus: daftar[0], peran: 'viewer' }));
+    const pertama = await teks(detailPage({ daftar, siklus: daftar[0], peran: 'owner' }));
     expect(pertama).not.toContain('←');
     expect(pertama).toContain('Siklus 2 →');
   });
 
   it('siklus tanpa ekor, penjualan, biaya, dan langkah tidak menghasilkan NaN', async () => {
     const kosong = siklusContoh({ ekor: [], penjualan: [], biaya: [], langkah: [] });
-    const h = await teks(detailPage({ daftar: [kosong], siklus: kosong, peran: 'viewer' }));
+    const h = await teks(detailPage({ daftar: [kosong], siklus: kosong, peran: 'owner' }));
     aman(h);
     expect(h).toContain('Belum ada ekor yang dicatat.');
     expect(h).not.toContain('Tindak lanjut');
@@ -1725,14 +1725,14 @@ describe('detailPage', () => {
 
   it('lebih dari 20 ekor menyembunyikan label per batang', async () => {
     const banyak = siklusContoh({ ekor: Array.from({ length: 25 }, (_v, i) => ({ tag: String(i), kg: 40, loinKg: 24, grade: 'B' })) });
-    const h = await teks(detailPage({ daftar: [banyak], siklus: banyak, peran: 'viewer' }));
+    const h = await teks(detailPage({ daftar: [banyak], siklus: banyak, peran: 'owner' }));
     expect(h).not.toContain('class="yx"');
-    const sedikit = await teks(detailPage({ daftar: [contoh], siklus: contoh, peran: 'viewer' }));
+    const sedikit = await teks(detailPage({ daftar: [contoh], siklus: contoh, peran: 'owner' }));
     expect(sedikit).toContain('class="yx"');
   });
 
-  it('pegawai tidak melihat tautan admin', async () => {
-    const h = await teks(detailPage({ daftar: [contoh], siklus: contoh, peran: 'viewer' }));
+  it('owner tidak melihat tautan admin', async () => {
+    const h = await teks(detailPage({ daftar: [contoh], siklus: contoh, peran: 'owner' }));
     expect(h).not.toContain('/admin');
   });
 });
@@ -2045,7 +2045,7 @@ git commit -m "feat: halaman Ringkasan, rincian siklus, dan admin" -m "Co-Author
   - `interface Deps { config: Config; siklus: SiklusStore; dana: DanaStore; limiter: LoginLimiter; now?: () => number }`; `createApp(deps: Deps): Hono`
   - `interface Stores { siklus: SiklusStore; dana: DanaStore }`; `createStoresFromEnv(env: Record<string, string | undefined>): Stores` (melempar `ConfigError` bila di Vercel tanpa token Blob)
   - Rute: `GET /aset/logo-putih.png` (publik), `GET /` , `GET /siklus/:no`, `GET /admin` (admin), `POST /logout`; rute POST admin ditambahkan di Task 7.
-  - `tests/helpers.ts`: `makeApp(overrides?)` mengembalikan `{ app, siklus, dana, limiter, backend }`; `login`, `sessionCookie`, `get`, `post`, konstanta `ADMIN`, `VIEWER`, `SECRET`, `ORIGIN` tetap.
+  - `tests/helpers.ts`: `makeApp(overrides?)` mengembalikan `{ app, siklus, dana, limiter, backend }`; `login`, `sessionCookie`, `get`, `post`, konstanta `ADMIN`, `OWNER`, `SECRET`, `ORIGIN` tetap.
 
 - [ ] **Step 1: Ganti pembantu tes**
 
@@ -2058,7 +2058,7 @@ import { createMemoryBackend } from '../src/store/memory-backend';
 import { createSiklusStore } from '../src/store/siklus-store';
 
 export const ADMIN = 'admin-password-123';
-export const VIEWER = 'viewer-password-123';
+export const OWNER = 'owner-password-123';
 export const SECRET = 's'.repeat(32);
 export const ORIGIN = 'http://localhost';
 
@@ -2068,7 +2068,7 @@ export function makeApp(overrides: Partial<Deps> = {}) {
   const dana = createDanaStore(backend);
   const limiter = createLoginLimiter();
   const app = createApp({
-    config: { adminPassword: ADMIN, viewerPassword: VIEWER, sessionSecret: SECRET },
+    config: { adminPassword: ADMIN, ownerPassword: OWNER, sessionSecret: SECRET },
     siklus,
     dana,
     limiter,
@@ -2114,7 +2114,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { createSession } from '../src/session';
 import type { Siklus } from '../src/siklus/types';
-import { ADMIN, get, login, makeApp, ORIGIN, post, SECRET, sessionCookie, VIEWER } from './helpers';
+import { ADMIN, get, login, makeApp, ORIGIN, post, SECRET, sessionCookie, OWNER } from './helpers';
 import { siklusContoh } from './fixtures';
 
 const contoh = JSON.parse(readFileSync('samples/siklus-contoh.json', 'utf8')) as Siklus;
@@ -2125,7 +2125,7 @@ describe('login', () => {
     const { app } = makeApp();
     expect((await get(app, '/login')).status).toBe(200);
 
-    const res = await login(app, VIEWER);
+    const res = await login(app, OWNER);
     expect(res.status).toBe(303);
     expect(res.headers.get('location')).toBe('/');
     const cookie = res.headers.get('set-cookie')!;
@@ -2157,7 +2157,7 @@ describe('login', () => {
 
   it('logout menghapus sesi', async () => {
     const { app } = makeApp();
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     const res = await post(app, '/logout', cookie);
     expect(res.status).toBe(303);
     expect(res.headers.get('set-cookie')).toMatch(/Max-Age=0|Expires=/i);
@@ -2203,8 +2203,8 @@ describe('akses tanpa sesi', () => {
 
   it('token yang diubah dianggap tanpa sesi', async () => {
     const { app } = makeApp();
-    const viewer = await sessionCookie(app, VIEWER);
-    const [, signature] = viewer.split('=')[1].split('.');
+    const owner = await sessionCookie(app, OWNER);
+    const [, signature] = owner.split('=')[1].split('.');
     const payload = btoa(JSON.stringify({ r: 'admin', exp: 9_999_999_999 })).replace(/=+$/, '');
     const forged = `__Host-overview_session=${payload}.${signature}`;
     expect((await get(app, '/admin', forged)).status).toBe(303);
@@ -2213,7 +2213,7 @@ describe('akses tanpa sesi', () => {
   it('sesi kedaluwarsa dan sesi bertanda tangan rahasia lain ditolak', async () => {
     let t = 1_700_000_000_000;
     const { app } = makeApp({ now: () => t });
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     expect((await get(app, '/', cookie)).status).toBe(200);
     t += 13 * 3600 * 1000;
     expect((await get(app, '/', cookie)).status).toBe(303);
@@ -2224,12 +2224,12 @@ describe('akses tanpa sesi', () => {
 });
 
 describe('Ringkasan', () => {
-  it('kosong: pegawai tidak melihat tombol atau tautan admin, admin melihat Tambah siklus', async () => {
+  it('kosong: owner tidak melihat tombol atau tautan admin, admin melihat Tambah siklus', async () => {
     const { app } = makeApp();
-    const pegawai = await (await get(app, '/', await sessionCookie(app, VIEWER))).text();
-    expect(pegawai).toContain('Belum ada siklus produksi');
-    expect(pegawai).not.toContain('Tambah siklus');
-    expect(pegawai).not.toContain('/admin');
+    const owner = await (await get(app, '/', await sessionCookie(app, OWNER))).text();
+    expect(owner).toContain('Belum ada siklus produksi');
+    expect(owner).not.toContain('Tambah siklus');
+    expect(owner).not.toContain('/admin');
     const admin = await (await get(app, '/', await sessionCookie(app, ADMIN))).text();
     expect(admin).toContain('Tambah siklus');
     expect(admin).toContain('href="/admin"');
@@ -2238,7 +2238,7 @@ describe('Ringkasan', () => {
   it('berisi siklus: kedua peran melihat angka dan tautan rincian yang sama', async () => {
     const { app, siklus } = makeApp();
     await siklus.put(contoh, { timpa: false });
-    for (const sandi of [VIEWER, ADMIN]) {
+    for (const sandi of [OWNER, ADMIN]) {
       const body = await (await get(app, '/', await sessionCookie(app, sandi))).text();
       expect(body).toContain('laba Rp 4.503.468');
       expect(body).toContain('href="/siklus/1"');
@@ -2248,11 +2248,11 @@ describe('Ringkasan', () => {
   it('bagian Dana investor hanya muncul bila ada dana, sama untuk kedua peran', async () => {
     const { app, siklus, dana } = makeApp();
     await siklus.put(contoh, { timpa: false });
-    const pegawai = await sessionCookie(app, VIEWER);
+    const owner = await sessionCookie(app, OWNER);
     const admin = await sessionCookie(app, ADMIN);
-    expect(await (await get(app, '/', pegawai)).text()).not.toContain('Dana investor');
+    expect(await (await get(app, '/', owner)).text()).not.toContain('Dana investor');
     await dana.add({ tanggal: '2026-10-06', jumlah: 1367000000, keterangan: 'Kas produksi' });
-    for (const cookie of [pegawai, admin]) {
+    for (const cookie of [owner, admin]) {
       const body = await (await get(app, '/', cookie)).text();
       expect(body).toContain('Sisa dana Rp 1.371.503.468 dari Rp 1.367.000.000 yang diterima');
     }
@@ -2276,7 +2276,7 @@ describe('Ringkasan', () => {
   it('galat penyimpanan menghasilkan 500 generik tanpa isi galat', async () => {
     const { app, backend } = makeApp();
     await backend.write('data/siklus.json', '{bukan json');
-    const res = await get(app, '/', await sessionCookie(app, VIEWER));
+    const res = await get(app, '/', await sessionCookie(app, OWNER));
     expect(res.status).toBe(500);
     const body = await res.text();
     expect(body).toContain('Terjadi kesalahan');
@@ -2285,10 +2285,10 @@ describe('Ringkasan', () => {
 });
 
 describe('rincian siklus', () => {
-  it('menampilkan siklus yang ada untuk pegawai', async () => {
+  it('menampilkan siklus yang ada untuk owner', async () => {
     const { app, siklus } = makeApp();
     await siklus.put(contoh, { timpa: false });
-    const res = await get(app, '/siklus/1', await sessionCookie(app, VIEWER));
+    const res = await get(app, '/siklus/1', await sessionCookie(app, OWNER));
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain('Siklus 1: yield 62,6 %');
@@ -2300,7 +2300,7 @@ describe('rincian siklus', () => {
     async (no) => {
       const { app, siklus } = makeApp();
       await siklus.put(contoh, { timpa: false });
-      expect((await get(app, `/siklus/${no}`, await sessionCookie(app, VIEWER))).status).toBe(404);
+      expect((await get(app, `/siklus/${no}`, await sessionCookie(app, OWNER))).status).toBe(404);
     },
   );
 
@@ -2313,7 +2313,7 @@ describe('rincian siklus', () => {
 describe('header keamanan', () => {
   it('semua respons membawa header keamanan dan CSP halaman yang ketat', async () => {
     const { app } = makeApp();
-    const cookie = await sessionCookie(app, VIEWER);
+    const cookie = await sessionCookie(app, OWNER);
     for (const res of [await get(app, '/login'), await get(app, '/', cookie), await get(app, '/tidak-ada', cookie)]) {
       expect(res.headers.get('x-robots-tag')).toBe('noindex, nofollow');
       expect(res.headers.get('referrer-policy')).toBe('no-referrer');
@@ -2327,9 +2327,9 @@ describe('header keamanan', () => {
 });
 
 describe('akses admin', () => {
-  it('pegawai mendapat 403 di /admin, admin mendapat 200', async () => {
+  it('owner mendapat 403 di /admin, admin mendapat 200', async () => {
     const { app } = makeApp();
-    expect((await get(app, '/admin', await sessionCookie(app, VIEWER))).status).toBe(403);
+    expect((await get(app, '/admin', await sessionCookie(app, OWNER))).status).toBe(403);
     const res = await get(app, '/admin', await sessionCookie(app, ADMIN));
     expect(res.status).toBe(200);
     expect(await res.text()).toContain('action="/admin/siklus"');
@@ -2452,11 +2452,11 @@ export function createApp({ config, siklus, dana, limiter, now = Date.now }: Dep
     const body = await c.req.parseBody();
     const password = typeof body.password === 'string' ? body.password.slice(0, 200) : '';
     // Kedua perbandingan selalu dijalankan agar waktu tidak membedakan peran.
-    const [isAdmin, isViewer] = await Promise.all([
+    const [isAdmin, isOwner] = await Promise.all([
       safeEqual(password, config.adminPassword),
-      safeEqual(password, config.viewerPassword),
+      safeEqual(password, config.ownerPassword),
     ]);
-    const role: Role | null = isAdmin ? 'admin' : isViewer ? 'viewer' : null;
+    const role: Role | null = isAdmin ? 'admin' : isOwner ? 'owner' : null;
 
     if (!role) {
       limiter.recordFailure(key);
@@ -2592,7 +2592,7 @@ import { storesDariBackend } from './store/from-env';
 // Nilai bawaan hanya untuk pengembangan lokal; produksi memakai env var Vercel.
 const env: Record<string, string | undefined> = {
   ADMIN_PASSWORD: 'dev-admin-password',
-  VIEWER_PASSWORD: 'dev-viewer-password',
+  OWNER_PASSWORD: 'dev-owner-password',
   SESSION_SECRET: 'dev-session-secret-for-local-use-only',
   ...process.env,
 };
@@ -2610,7 +2610,7 @@ if ((await stores.dana.list()).length === 0) {
 
 const port = Number(env.PORT ?? 3000);
 serve({ fetch: buildApp(env).fetch, port }, () => {
-  console.log(`http://localhost:${port}  (admin: ${env.ADMIN_PASSWORD}, pegawai: ${env.VIEWER_PASSWORD})`);
+  console.log(`http://localhost:${port}  (admin: ${env.ADMIN_PASSWORD}, owner: ${env.OWNER_PASSWORD})`);
 });
 ```
 
@@ -2656,7 +2656,7 @@ git commit -m "feat: dasbor siklus menggantikan rute laporan HTML" -m "Co-Author
 ```ts
 // tests/admin.test.ts
 import { describe, expect, it } from 'vitest';
-import { ADMIN, get, makeApp, post, sessionCookie, VIEWER } from './helpers';
+import { ADMIN, get, makeApp, post, sessionCookie, OWNER } from './helpers';
 import { siklusContoh } from './fixtures';
 
 const berkas = (isi: string | Uint8Array, nama = 'siklus.json', opsi: { timpa?: boolean } = {}) => {
@@ -2673,7 +2673,7 @@ const urlenc = { 'content-type': 'application/x-www-form-urlencoded' };
 const jahat = '<script>alert(1)</script>';
 
 describe('unggah siklus', () => {
-  it('admin mengunggah siklus; pegawai langsung melihatnya', async () => {
+  it('admin mengunggah siklus; owner langsung melihatnya', async () => {
     const { app, siklus } = makeApp();
     const admin = await sessionCookie(app, ADMIN);
     const res = await post(app, '/admin/siklus', admin, unggahan({ no: 4, pembeli: '  PT Baru  ' }));
@@ -2681,9 +2681,9 @@ describe('unggah siklus', () => {
     expect(res.headers.get('location')).toBe('/admin?added=1');
     expect((await siklus.get(4))?.pembeli).toBe('PT Baru');
 
-    const viewer = await sessionCookie(app, VIEWER);
-    expect(await (await get(app, '/', viewer)).text()).toContain('href="/siklus/4"');
-    expect((await get(app, '/siklus/4', viewer)).status).toBe(200);
+    const owner = await sessionCookie(app, OWNER);
+    expect(await (await get(app, '/', owner)).text()).toContain('href="/siklus/4"');
+    expect((await get(app, '/siklus/4', owner)).status).toBe(200);
     expect(await (await get(app, '/admin?added=1', admin)).text()).toContain('Siklus ditambahkan.');
   });
 
@@ -2756,7 +2756,7 @@ describe('unggah siklus', () => {
   it('data bermusuhan yang sah tersimpan apa adanya tetapi tampil ter-escape di semua halaman', async () => {
     const { app } = makeApp();
     const admin = await sessionCookie(app, ADMIN);
-    const viewer = await sessionCookie(app, VIEWER);
+    const owner = await sessionCookie(app, OWNER);
     const res = await post(
       app,
       '/admin/siklus',
@@ -2770,7 +2770,7 @@ describe('unggah siklus', () => {
       }),
     );
     expect(res.status).toBe(303);
-    for (const [path, cookie] of [['/', viewer], ['/siklus/1', viewer], ['/admin', admin]] as const) {
+    for (const [path, cookie] of [['/', owner], ['/siklus/1', owner], ['/admin', admin]] as const) {
       const body = await (await get(app, path, cookie)).text();
       expect(body, path).not.toMatch(/<script/i);
       expect(body, path).not.toContain('<img src=x');
@@ -2798,7 +2798,7 @@ describe('hapus siklus', () => {
 });
 
 describe('dana investor', () => {
-  it('admin menambah dana; jumlah bertitik diterima dan tampil di Ringkasan untuk pegawai', async () => {
+  it('admin menambah dana; jumlah bertitik diterima dan tampil di Ringkasan untuk owner', async () => {
     const { app, dana } = makeApp();
     const admin = await sessionCookie(app, ADMIN);
     const res = await post(app, '/admin/dana', admin, formDana(danaOk), urlenc);
@@ -2807,8 +2807,8 @@ describe('dana investor', () => {
     const [entri] = await dana.list();
     expect(entri).toMatchObject({ tanggal: '2026-10-06', jumlah: 1367000000, keterangan: 'Kas produksi' });
 
-    const viewer = await sessionCookie(app, VIEWER);
-    expect(await (await get(app, '/', viewer)).text()).toContain('Dana investor');
+    const owner = await sessionCookie(app, OWNER);
+    expect(await (await get(app, '/', owner)).text()).toContain('Dana investor');
     expect(await (await get(app, '/admin?dana=1', admin)).text()).toContain('Dana ditambahkan.');
   });
 
@@ -2886,11 +2886,11 @@ describe('otorisasi dan CSRF', () => {
     expect((await h.dana.list()).map((d) => d.id)).toEqual([h.danaId]);
   }
 
-  it('pegawai mendapat 403 di semua POST admin dan tidak ada yang berubah', async () => {
+  it('owner mendapat 403 di semua POST admin dan tidak ada yang berubah', async () => {
     const h = await siapkan();
-    const viewer = await sessionCookie(h.app, VIEWER);
+    const owner = await sessionCookie(h.app, OWNER);
     for (const [label, path, buatBody, header] of aksi(h.danaId)) {
-      expect((await post(h.app, path, viewer, buatBody(), header)).status, label).toBe(403);
+      expect((await post(h.app, path, owner, buatBody(), header)).status, label).toBe(403);
     }
     await tidakBerubah(h);
   });
@@ -3038,11 +3038,11 @@ Run (latar belakang): `npm run dev`, lalu:
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" http://localhost:3000/
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/robots.txt
 curl -s -o /dev/null -w "%{http_code} %{content_type}\n" http://localhost:3000/aset/logo-putih.png
-curl -s -i -H "Origin: http://localhost:3000" -d "password=dev-viewer-password" http://localhost:3000/login | head -12
+curl -s -i -H "Origin: http://localhost:3000" -d "password=dev-owner-password" http://localhost:3000/login | head -12
 curl -s -o /dev/null -w "%{http_code}\n" -X POST -H "Origin: https://situs-jahat.example" http://localhost:3000/admin/dana
 ```
 
-Expected: `303 http://localhost:3000/login`, `200`, `200 image/png`, `303` ke `/` dengan `Set-Cookie: __Host-overview_session=...; HttpOnly; Secure; SameSite=Strict`, dan `403`. Catatan: `curl` menolak mengirim ulang cookie `Secure` lewat HTTP, jadi pemeriksaan halaman berlogin dilakukan di browser pada `http://localhost:3000`. Bila ekstensi Chrome tersedia, login sebagai pegawai (sandi dari keluaran `npm run dev`), periksa Ringkasan (kartu angka, Dana investor, batang), buka Siklus 1, pastikan tidak ada tombol "Tambah siklus"; login sebagai admin, unggah `samples/siklus-contoh.json` dengan nomor diubah menjadi 2, timpa, hapus, tambah dan hapus satu dana; uji lebar ponsel dan mode gelap. Bila ekstensi tidak terhubung, catat "pemeriksaan browser belum dilakukan" di ledger dan laporan akhir; jangan mencoba ulang. Hentikan server setelahnya.
+Expected: `303 http://localhost:3000/login`, `200`, `200 image/png`, `303` ke `/` dengan `Set-Cookie: __Host-overview_session=...; HttpOnly; Secure; SameSite=Strict`, dan `403`. Catatan: `curl` menolak mengirim ulang cookie `Secure` lewat HTTP, jadi pemeriksaan halaman berlogin dilakukan di browser pada `http://localhost:3000`. Bila ekstensi Chrome tersedia, login sebagai owner (sandi dari keluaran `npm run dev`), periksa Ringkasan (kartu angka, Dana investor, batang), buka Siklus 1, pastikan tidak ada tombol "Tambah siklus"; login sebagai admin, unggah `samples/siklus-contoh.json` dengan nomor diubah menjadi 2, timpa, hapus, tambah dan hapus satu dana; uji lebar ponsel dan mode gelap. Bila ekstensi tidak terhubung, catat "pemeriksaan browser belum dilakukan" di ledger dan laporan akhir; jangan mencoba ulang. Hentikan server setelahnya.
 
 - [ ] **Step 3: Snapshot lalu hapus `investor/`**
 
@@ -3060,11 +3060,11 @@ Expected: dua commit; `ls investor` gagal; `npx vitest run` masih lolos (tes mem
 Isi wajib, urut:
 1. Tujuan satu paragraf: dasbor siklus produksi dengan dua peran.
 2. Menjalankan lokal: `npm install`, `npm run dev`, alamat `http://localhost:3000`, nilai bawaan dev (dicetak di terminal), data contoh disemai di `.data/`.
-3. Tabel env var (nama, aturan, tempat mengisi): `ADMIN_PASSWORD` (>= 12), `VIEWER_PASSWORD` (>= 12, beda), `SESSION_SECRET` (>= 32), `BLOB_READ_WRITE_TOKEN` (otomatis dari Blob store); semuanya diisi di Vercel (Settings, Environment Variables), bukan di berkas.
+3. Tabel env var (nama, aturan, tempat mengisi): `ADMIN_PASSWORD` (>= 12), `OWNER_PASSWORD` (>= 12, beda), `SESSION_SECRET` (>= 32), `BLOB_READ_WRITE_TOKEN` (otomatis dari Blob store); semuanya diisi di Vercel (Settings, Environment Variables), bukan di berkas.
 4. Format berkas siklus: salin isi `samples/siklus-contoh.json` sebagai contoh lengkap dan jelaskan tiap bidang, aturan (nomor 1–9999; tanggal `YYYY-MM-DD`; harga dan rp bilangan bulat rupiah tanpa titik; berat desimal dengan titik; `loinKg` tidak melebihi `kg`; status `selesai` atau `berjalan`; maksimal 512 KB, UTF-8; batas jumlah baris dan panjang teks), cara menimpa (centang "Timpa") dan menghapus.
 5. Dana investor: form di halaman Kelola (tanggal, jumlah boleh diketik dengan titik, keterangan), dihitung di Ringkasan dengan anggapan yang tertulis di halaman.
 6. Mengganti sandi: ubah env var di Vercel lalu deploy ulang; ganti `SESSION_SECRET` untuk mengeluarkan semua sesi.
-7. Keterbatasan: dua sandi bersama; pembatas login best effort (tambahkan aturan rate limit Firewall Vercel pada `/login`); dua admin yang menulis serentak bisa saling menimpa; pegawai melihat semua angka keuangan termasuk dana; sisa dana adalah perkiraan.
+7. Keterbatasan: dua sandi bersama; pembatas login best effort (tambahkan aturan rate limit Firewall Vercel pada `/login`); dua admin yang menulis serentak bisa saling menimpa; owner melihat semua angka keuangan termasuk dana; sisa dana adalah perkiraan.
 8. Langkah rilis dari spec lama bagian 10 persis, dengan langkah 4 sampai 8 ditandai "menunggu konfirmasi pemilik"; pemeriksaan manual langkah 8 mengikuti spec baru bagian 11.
 
 - [ ] **Step 5: Verifikasi akhir**

@@ -1,6 +1,6 @@
 export interface Config {
   adminPassword: string;
-  viewerPassword: string;
+  ownerPassword: string;
   sessionSecret: string;
 }
 
@@ -23,12 +23,12 @@ export function loadConfig(env: Env): Config {
   };
 
   const adminPassword = read('ADMIN_PASSWORD', 12);
-  const viewerPassword = read('VIEWER_PASSWORD', 12);
+  const ownerPassword = read('OWNER_PASSWORD', 12);
   const sessionSecret = read('SESSION_SECRET', 32);
-  if (adminPassword && adminPassword === viewerPassword) {
-    problems.push('ADMIN_PASSWORD dan VIEWER_PASSWORD harus berbeda');
+  if (adminPassword && adminPassword === ownerPassword) {
+    problems.push('ADMIN_PASSWORD dan OWNER_PASSWORD harus berbeda');
   }
 
   if (problems.length > 0) throw new ConfigError(problems);
-  return { adminPassword, viewerPassword, sessionSecret };
+  return { adminPassword, ownerPassword, sessionSecret };
 }
