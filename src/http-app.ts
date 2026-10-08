@@ -79,10 +79,11 @@ export function createApp({ config, siklus, dana, limiter, now = Date.now }: Dep
     await next();
   });
 
-  // Form harus berasal dari host publik yang sama; browser yang menyembunyikan Origin
-  // tetap dapat memakai Referer atau Sec-Fetch-Site sebagai bukti same-origin.
+  // Login tidak bergantung pada Origin: beberapa browser/proxy mengirim nilai yang
+  // tidak cocok. Aksi setelah login tetap memerlukan bukti same-origin.
   app.use('*', async (c, next) => {
-    if (c.req.method !== 'GET' && c.req.method !== 'HEAD' && !isSameOriginRequest(c.req.raw)) {
+    const login = c.req.method === 'POST' && c.req.path === '/login';
+    if (c.req.method !== 'GET' && c.req.method !== 'HEAD' && !login && !isSameOriginRequest(c.req.raw)) {
       return c.html(messagePage('Ditolak', 'Permintaan tidak berasal dari situs ini.'), 403);
     }
     await next();
