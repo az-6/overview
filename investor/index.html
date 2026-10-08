@@ -75,6 +75,12 @@ tr.tautan{cursor:pointer}tr.tautan:hover td{background:var(--laut-muda)}
 .chip.selesai{background:var(--laut-muda);color:var(--laut)}.chip.berjalan{background:var(--turun-muda);color:var(--turun)}
 .antar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:14px}
 .galat{background:var(--turun-muda);color:var(--turun);border-radius:10px;padding:16px 18px;font-weight:500}
+.dana{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.dana div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dana .k{font-size:13px;color:var(--muted)}.dana .v{font:500 20px/1.2 var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (max-width:760px){.dana{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.dana{grid-template-columns:minmax(0,1fr)}}
+.pakai{height:12px;background:var(--laut-muda);border-radius:3px;overflow:hidden;margin-top:16px}.pakai div{height:100%;background:var(--laut)}
 footer{border-top:1px solid var(--line);padding-top:18px;font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -123,7 +129,27 @@ function kaki() {
   return window.CATATAN_KAKI ? `<footer>${esc(window.CATATAN_KAKI)}</footer>` : "";
 }
 
-function ringkasan(daftar) {
+function bagianDana(dana, daftar) {
+  const p = H.posisiDana(dana, daftar);
+  if (!p) return "";
+  const porsi = Math.min(1, p.terpakai / p.diterima);
+  return `<section><p class="eyebrow">Dana investor</p><h2>Sisa dana ${H.rp(p.sisa)} dari ${H.rp(p.diterima)} yang diterima</h2>
+    <div class="panel">
+      <div class="dana">
+        <div><span class="k">Dana diterima</span><span class="v">${H.rpRingkas(p.diterima)}</span></div>
+        <div><span class="k">Terpakai untuk biaya produksi</span><span class="v">${H.rpRingkas(p.terpakai)}</span></div>
+        <div><span class="k">Kembali dari penjualan</span><span class="v">${H.rpRingkas(p.kembali)}</span></div>
+        <div><span class="k">Imbal hasil terhadap dana</span><span class="v ${kelasLaba(p.sisa - p.diterima)}">${H.persen(p.imbal, 2)}</span></div>
+      </div>
+      <div class="pakai" title="Biaya produksi ${H.persen(porsi, 1)} dari dana"><div style="width:${porsi * 100}%"></div></div>
+      <p class="muted" style="margin:8px 0 0;font-size:13px">Biaya produksi semua siklus = ${H.persen(porsi, 1)} dari dana yang diterima.</p>
+      ${dana.length > 1 ? `<div class="gulir" style="margin-top:14px"><table><thead><tr><th>Tanggal</th><th>Keterangan</th><th class="r">Jumlah</th></tr></thead><tbody>${dana.map((x) => `<tr><td>${tgl(x.tanggal)}</td><td>${esc(x.keterangan || "")}</td><td class="r">${H.rp(x.jumlah)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted" style="margin:6px 0 0;font-size:13px">Diterima ${tgl(dana[0].tanggal)}${dana[0].keterangan ? ` · ${esc(dana[0].keterangan)}` : ""}.</p>`}
+      <p class="muted" style="margin:12px 0 0;font-size:13px">Sisa dana dihitung dengan anggapan seluruh penjualan sudah dibayar dan seluruh biaya sudah dilunasi; biaya di luar siklus produksi (gaji kantor, sewa, aset) belum termasuk.</p>
+    </div>
+  </section>`;
+}
+
+function ringkasan(daftar, dana) {
   const t = H.ringkasSemua(daftar);
   $("label").textContent = `Ringkasan · ${t.siklus} siklus produksi`;
   $("judul").textContent = t.siklus ? `${H.kg(t.kgLoin)} loin dari ${t.siklus} siklus, ${t.laba < 0 ? "rugi" : "laba"} ${H.rp(Math.abs(t.laba))}` : "Belum ada siklus produksi";
@@ -135,7 +161,7 @@ function ringkasan(daftar) {
     ["Loin dihasilkan", H.kg(t.kgLoin), `Yield ${H.persen(t.yield)}`],
     ["Pendapatan", H.rpRingkas(t.pendapatan), `Biaya ${H.rpRingkas(t.biaya)}`],
     [t.laba < 0 ? "Rugi" : "Laba", H.rpRingkas(t.laba), `Margin ${H.persen(t.margin)}`, kelasLaba(t.laba)],
-  ]) + `
+  ]) + bagianDana(dana, daftar) + `
   <section><p class="eyebrow">Per siklus</p><h2>Yield dan margin tiap siklus</h2>
     <div class="dua">
       <div class="panel"><p class="muted" style="margin:0 0 10px">Yield (garis putus = rencana 60 %)</p>${batang(baris.map(({ s, r }) => ({ label: `Siklus ${s.no}`, v: r.yield })), { format: H.persen, target: 0.6 })}</div>
@@ -199,8 +225,8 @@ function detail(daftar, s) {
 }
 
 function tampil() {
-  let daftar;
-  try { daftar = H.periksa(window.SIKLUS); }
+  let daftar, dana;
+  try { daftar = H.periksa(window.SIKLUS); dana = H.periksaDana(window.DANA); }
   catch (e) {
     $("judul").textContent = "Data siklus tidak bisa dibaca";
     $("isi").innerHTML = `<div class="galat" style="margin-top:24px">${esc(e.message)}</div>`;
@@ -209,7 +235,7 @@ function tampil() {
   const m = /^#siklus-(\d+)$/.exec(location.hash);
   const s = m && daftar.find((x) => x.no === Number(m[1]));
   nav(daftar, s ? s.no : "ringkasan");
-  try { $("isi").innerHTML = s ? detail(daftar, s) : ringkasan(daftar); }
+  try { $("isi").innerHTML = s ? detail(daftar, s) : ringkasan(daftar, dana); }
   catch (e) { // jaring terakhir: halaman kosong tanpa kalimat lebih buruk daripada kalimat galat
     $("judul").textContent = "Laman tidak bisa ditampilkan";
     $("isi").innerHTML = `<div class="galat" style="margin-top:24px">${esc(e.message)}</div>`;

@@ -69,3 +69,22 @@ test("entri cacat ditolak dengan kalimat, bukan TypeError", () => {
   assert.throws(() => H.periksa([dasar({ produksi: "2026-02-30" })]), /tanggal produksi/);
   assert.throws(() => H.periksa([dasar({ kirim: "2026-13-01" })]), /tanggal kirim/);
 });
+
+test("posisi dana investor", () => {
+  const p = H.posisiDana(H.periksaDana(window.DANA), H.periksa(window.SIKLUS));
+  assert.equal(p.diterima, 1367000000);
+  assert.equal(p.terpakai, 37072682);
+  assert.equal(p.kembali, 41576150);
+  assert.equal(p.sisa, 1371503468);
+  assert.equal(H.persen(p.imbal, 2), "0,33 %");
+  assert.equal(Math.round(p.imbal * 10000) / 100, 0.33);
+  assert.equal(H.posisiDana([], []), null);
+});
+
+test("data dana cacat ditolak dengan kalimat", () => {
+  assert.throws(() => H.periksaDana({}), /daftar/);
+  assert.throws(() => H.periksaDana([null]), /Dana ke-1 kosong/);
+  assert.throws(() => H.periksaDana([{ tanggal: "2026-10-06", jumlah: "1.367.000.000" }]), /jumlah.*bilangan bulat/);
+  assert.throws(() => H.periksaDana([{ tanggal: "2026-02-30", jumlah: 1 }]), /tanggal/);
+  assert.deepEqual(H.periksaDana(undefined), []);
+});

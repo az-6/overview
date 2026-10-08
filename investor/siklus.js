@@ -2,6 +2,11 @@
 // Harga & rp: bilangan bulat rupiah tanpa titik. Berat: angka berdesimal titik (27.75).
 window.CATATAN_KAKI = "Dokumen latihan · seluruh nama, perusahaan, dan angka fiktif";
 
+// Dana investor yang diterima. Jumlah: bilangan bulat rupiah tanpa titik.
+window.DANA = [
+  { tanggal: "2026-10-06", jumlah: 1367000000, keterangan: "Dana investor — kas produksi" },
+];
+
 window.SIKLUS = [
   {
     no: 1,

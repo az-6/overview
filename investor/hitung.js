@@ -82,14 +82,34 @@
     };
   }
 
+  // Dana investor: uang yang datang dari luar, terpisah dari siklus. Daftar kosong/tidak ada = [].
+  function periksaDana(dana) {
+    if (dana === undefined) return [];
+    if (!Array.isArray(dana)) throw new Error("Data dana harus berupa daftar (DANA = [...]).");
+    dana.forEach((x, i) => {
+      const d = `Dana ke-${i + 1}`;
+      if (!objek(x)) throw new Error(`${d} kosong atau bukan objek (cek koma ganda di siklus.js).`);
+      if (typeof x.tanggal !== "string" || !tanggalSah(x.tanggal)) throw new Error(`${d}: tanggal harus tanggal yang ada, berbentuk YYYY-MM-DD.`);
+      if (!(Number.isInteger(x.jumlah) && x.jumlah > 0)) throw new Error(`${d}: jumlah harus bilangan bulat rupiah tanpa titik (1367000000).`);
+    });
+    return [...dana].sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+  }
+
+  // Sisa = dana − biaya + pendapatan: anggapan semua penjualan dibayar dan semua biaya lunas.
+  function posisiDana(dana, daftar) {
+    if (!dana.length) return null;
+    const t = ringkasSemua(daftar), diterima = jumlah(dana, (x) => x.jumlah);
+    return { diterima, terpakai: t.biaya, kembali: t.pendapatan, sisa: diterima - t.biaya + t.pendapatan, imbal: bagi(t.laba, diterima) };
+  }
+
   const angka = (n, d) => n.toLocaleString("id-ID", { minimumFractionDigits: d, maximumFractionDigits: d });
   const rp = (n) => (n < 0 ? "−" : "") + "Rp " + Math.abs(n).toLocaleString("id-ID");
   const ringkas = new Intl.NumberFormat("id-ID", { notation: "compact", maximumFractionDigits: 2 });
   const rpRingkas = (n) => (n < 0 ? "−" : "") + "Rp " + ringkas.format(Math.abs(n));
   const kg = (n, d = 2) => angka(n, d) + " kg";
-  const persen = (x) => (x == null ? "—" : angka(x * 100, 1) + " %");
+  const persen = (x, d = 1) => (x == null ? "—" : angka(x * 100, d) + " %");
 
-  const api = { periksa, ringkasSiklus, ringkasSemua, rp, rpRingkas, kg, persen };
+  const api = { periksa, periksaDana, posisiDana, ringkasSiklus, ringkasSemua, rp, rpRingkas, kg, persen };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.Hitung = api;
 })(this);
