@@ -1,0 +1,47 @@
+// DATA SAJA. Satu entri per siklus produksi; angka turunan dihitung hitung.js.
+// Harga & rp: bilangan bulat rupiah tanpa titik. Berat: angka berdesimal titik (27.75).
+window.CATATAN_KAKI = "Dokumen latihan · seluruh nama, perusahaan, dan angka fiktif";
+
+window.SIKLUS = [
+  {
+    no: 1,
+    produksi: "2026-10-03",
+    kirim: "2026-10-04",
+    pembeli: "PT. Sari Nusa Sejati",
+    ekor: [
+      { tag: "001", kg: 44, loinKg: 27.75, grade: "B" },
+      { tag: "002", kg: 55, loinKg: 33.70, grade: "B" },
+      { tag: "003", kg: 39, loinKg: 23.94, grade: "C" },
+      { tag: "004", kg: 58, loinKg: 36.93, grade: "B" },
+      { tag: "005", kg: 27, loinKg: 14.09, grade: "C" },
+      { tag: "006", kg: 64, loinKg: 41.23, grade: "B" },
+      { tag: "007", kg: 23, loinKg: 16.14, grade: "C" },
+      { tag: "008", kg: 34, loinKg: 21.60, grade: "C" },
+      { tag: "009", kg: 59, loinKg: 37.33, grade: "B" },
+      { tag: "010", kg: 42, loinKg: 26.57, grade: "B" },
+      { tag: "011", kg: 36, loinKg: 21.66, grade: "C" },
+    ],
+    penjualan: [
+      { nama: "Loin B-SO", kg: 203.51, harga: 140000 },
+      { nama: "Loin C-SO", kg: 97.43, harga: 125000 },
+      { nama: "Toro", kg: 14, harga: 30000 },
+      { nama: "Kepala (+ rahang)", kg: 63, harga: 5000 },
+      { nama: "Tetelan coklat", kg: 7, harga: 18000 },
+      { nama: "Daging kerok", kg: 3, harga: 15000 },
+    ],
+    biaya: [
+      { nama: "Ikan utuh", rp: 22126000 },
+      { nama: "Kargo", rp: 11080029 },
+      { nama: "Handling", rp: 1846568 },
+      { nama: "Kemasan", rp: 1820085 },
+      { nama: "Jasa", rp: 200000 },
+    ],
+    langkah: [
+      { judul: "Negosiasi tarif kargo", isi: "Tarif Rp 29.500/kg kotor (dari Rp 31.000) menghemat sekitar Rp 1.840 per kg loin.", status: "berjalan" },
+      { judul: "Pembeli untuk tulang tengah dan tetelan hitam", isi: "Sebanyak 65 kg hasil samping belum laku dan dibuang.", status: "berjalan" },
+      { judul: "Porsi grade B dinaikkan", isi: "Memprioritaskan ekor di atas 37 kg, yang cenderung menghasilkan grade B.", status: "berjalan" },
+      { judul: "Grade loin dirinci menjadi enam kelas", isi: "A, B, dan C masing-masing dibedakan skin-on dan skinless.", status: "selesai" },
+      { judul: "Seluruh transaksi tercatat di sistem ERP", isi: "Penerimaan, fillet, pengiriman, dan faktur bisa ditelusuri ke dokumennya.", status: "selesai" },
+    ],
+  },
+];

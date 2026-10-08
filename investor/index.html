@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Siklus Produksi · PT. Katalis Lintas Global</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500&display=swap">
+<style>
+:root{
+  --bg:#f5f8fa;--surface:#fff;--ink:#0f2433;--muted:#5a6f7d;--line:#d9e3ea;
+  --laut:#0a6b9e;--laut-muda:#e3f0f7;--naik:#1f7a4d;--turun:#b4442f;--turun-muda:#f8e7e3;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"IBM Plex Serif",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#08151e;--surface:#0f2130;--ink:#e4edf3;--muted:#93a8b6;--line:#20384a;
+  --laut:#4fb0e3;--laut-muda:#123047;--naik:#5cc48f;--turun:#ec8a74;--turun-muda:#3a1e19;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
+a{color:var(--laut)}
+.pita{background:linear-gradient(135deg,#06324d,#0a6b9e);color:#fff;padding-inline:16px}
+.pita-isi{max-width:960px;margin:0 auto;padding-block:24px 44px}
+.pita img{height:40px;display:block}
+.pita nav{display:flex;flex-wrap:wrap;gap:6px;margin-top:24px}
+.pita nav a{color:#fff;text-decoration:none;font:500 13px/1 var(--mono);padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.35)}
+.pita nav a[aria-current="page"]{background:#fff;color:#06324d;border-color:#fff}
+.label{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;opacity:.8;margin:28px 0 10px}
+h1{font:500 clamp(28px,5vw,40px)/1.15 var(--serif);margin:0;text-wrap:balance}
+.pita p.lead{max-width:62ch;margin:12px 0 0;opacity:.88}
+main{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:0 64px;display:flex;flex-direction:column;gap:48px}
+section{display:flex;flex-direction:column;gap:16px;min-width:0}
+h2{font:600 21px/1.3 var(--sans);margin:0;text-wrap:balance}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--laut);margin:0}
+.muted{color:var(--muted)}
+.kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:-28px}
+.kpi div{background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .k,.kpi .s{font-size:13px;color:var(--muted)}
+.kpi .v{font:500 23px/1.2 var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.v.naik{color:var(--naik)}.v.turun,.turun{color:var(--turun)}
+@media (max-width:760px){.kpi{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.kpi{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.gulir{overflow-x:auto;position:relative}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--muted);text-align:left;font-size:13px;border-bottom:1px solid var(--line);padding:8px 10px;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line)}
+.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.total td{font-weight:600;border-bottom:none;border-top:1.5px solid var(--ink)}
+tr.tautan{cursor:pointer}tr.tautan:hover td{background:var(--laut-muda)}
+.hbar{display:flex;flex-direction:column;gap:8px}
+.hbar .row{display:grid;grid-template-columns:90px minmax(0,1fr) 90px;gap:10px;align-items:center;font-size:14px}
+.hbar .trak{position:relative;height:16px;background:var(--laut-muda);border-radius:3px}
+.hbar .isi{position:absolute;top:0;bottom:0;background:var(--laut);border-radius:3px}
+.hbar .isi.neg{background:var(--turun)}
+.hbar .nol{position:absolute;top:-3px;bottom:-3px;border-left:1.5px solid var(--muted)}
+.hbar .target{position:absolute;top:-3px;bottom:-3px;border-left:1.5px dashed var(--turun)}
+.dua{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.dua{grid-template-columns:minmax(0,1fr)}}
+.yield{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(6px,1fr);gap:4px;align-items:end;height:190px;position:relative;padding-top:18px;min-width:max(100%,var(--lebar))}
+.yield .b{background:var(--laut);border-radius:3px 3px 0 0;position:relative}
+.yield .b.c{background:var(--muted)}
+.yield .b span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:500 11px/1 var(--mono);white-space:nowrap}
+.yield .garis{position:absolute;left:0;right:0;border-top:1.5px dashed var(--turun);z-index:1;pointer-events:none}
+.yx{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(6px,1fr);gap:4px;margin-top:6px;font:11px/1.3 var(--mono);color:var(--muted);text-align:center;min-width:max(100%,var(--lebar))}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.biaya .row{grid-template-columns:130px minmax(0,1fr) 160px}
+@media (max-width:520px){.hbar .row,.biaya .row{grid-template-columns:minmax(0,1fr) auto}.hbar .trak{grid-column:1/-1;order:3}}
+.langkah{list-style:none;margin:0;padding:0}
+.langkah li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.langkah li:last-child{border-bottom:none}
+.langkah p{margin:0;color:var(--muted);font-size:14px}
+.chip{grid-row:1;grid-column:2;font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-radius:999px;align-self:start}
+.chip.selesai{background:var(--laut-muda);color:var(--laut)}.chip.berjalan{background:var(--turun-muda);color:var(--turun)}
+.antar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:14px}
+.galat{background:var(--turun-muda);color:var(--turun);border-radius:10px;padding:16px 18px;font-weight:500}
+footer{border-top:1px solid var(--line);padding-top:18px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="pita"><div class="pita-isi">
+  <img src="logo-putih.png" alt="PT. Katalis Lintas Global">
+  <nav id="nav" aria-label="Siklus"></nav>
+  <p class="label" id="label"></p>
+  <h1 id="judul"></h1>
+  <p class="lead" id="lead"></p>
+</div></header>
+<main id="isi"></main>
+
+<script src="hitung.js"></script>
+<script src="siklus.js"></script>
+<script>
+const H = window.Hitung;
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const tgl = (d) => d ? new Date(d + "T00:00:00+07:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }) : "—";
+const kelasLaba = (n) => (n < 0 ? "turun" : "naik");
+const $ = (id) => document.getElementById(id);
+
+function kpi(items) {
+  return `<div class="kpi">${items.map(([k, v, s, c = ""]) =>
+    `<div><span class="k">${k}</span><span class="v ${c}">${v}</span><span class="s">${s}</span></div>`).join("")}</div>`;
+}
+
+// Batang mendatar bertanda: nol selalu tergambar, nilai negatif ke kiri.
+function batang(items, { format, target } = {}) {
+  const vals = items.map((i) => i.v ?? 0).concat(target ?? 0, 0);
+  const lo = Math.min(...vals), hi = Math.max(...vals), rentang = hi - lo || 1;
+  const pos = (v) => ((v - lo) / rentang) * 100;
+  return `<div class="hbar">${items.map((i) => {
+    const v = i.v;
+    const bar = v == null ? "" : `<div class="isi ${v < 0 ? "neg" : ""}" style="left:${pos(Math.min(0, v))}%;width:${Math.abs(pos(v) - pos(0))}%"></div>`;
+    return `<div class="row"><span>${esc(i.label)}</span><div class="trak">${bar}<div class="nol" style="left:${pos(0)}%"></div>${target != null ? `<div class="target" style="left:${pos(target)}%"></div>` : ""}</div><span class="r">${format(v)}</span></div>`;
+  }).join("")}</div>`;
+}
+
+function nav(daftar, aktif) {
+  $("nav").innerHTML = [`<a href="#ringkasan" ${aktif === "ringkasan" ? 'aria-current="page"' : ""}>Ringkasan</a>`]
+    .concat(daftar.map((s) => `<a href="#siklus-${s.no}" ${aktif === s.no ? 'aria-current="page"' : ""}>Siklus ${s.no}</a>`)).join("");
+}
+
+function kaki() {
+  return window.CATATAN_KAKI ? `<footer>${esc(window.CATATAN_KAKI)}</footer>` : "";
+}
+
+function ringkasan(daftar) {
+  const t = H.ringkasSemua(daftar);
+  $("label").textContent = `Ringkasan · ${t.siklus} siklus produksi`;
+  $("judul").textContent = t.siklus ? `${H.kg(t.kgLoin)} loin dari ${t.siklus} siklus, ${t.laba < 0 ? "rugi" : "laba"} ${H.rp(Math.abs(t.laba))}` : "Belum ada siklus produksi";
+  $("lead").textContent = t.siklus ? `Periode ${tgl(daftar[0].produksi)} sampai ${tgl(daftar[daftar.length - 1].produksi)}. Klik satu siklus untuk rinciannya.` : "Data siklus pertama belum dimasukkan.";
+  if (!t.siklus) return kaki();
+  const baris = daftar.map((s) => ({ s, r: H.ringkasSiklus(s) }));
+  return kpi([
+    ["Ikan utuh diterima", H.kg(t.kgIkan, 0), `${t.ekor} ekor`],
+    ["Loin dihasilkan", H.kg(t.kgLoin), `Yield ${H.persen(t.yield)}`],
+    ["Pendapatan", H.rpRingkas(t.pendapatan), `Biaya ${H.rpRingkas(t.biaya)}`],
+    [t.laba < 0 ? "Rugi" : "Laba", H.rpRingkas(t.laba), `Margin ${H.persen(t.margin)}`, kelasLaba(t.laba)],
+  ]) + `
+  <section><p class="eyebrow">Per siklus</p><h2>Yield dan margin tiap siklus</h2>
+    <div class="dua">
+      <div class="panel"><p class="muted" style="margin:0 0 10px">Yield (garis putus = rencana 60 %)</p>${batang(baris.map(({ s, r }) => ({ label: `Siklus ${s.no}`, v: r.yield })), { format: H.persen, target: 0.6 })}</div>
+      <div class="panel"><p class="muted" style="margin:0 0 10px">Margin laba</p>${batang(baris.map(({ s, r }) => ({ label: `Siklus ${s.no}`, v: r.margin })), { format: H.persen })}</div>
+    </div>
+  </section>
+  <section><p class="eyebrow">Daftar siklus</p><h2>Semua siklus produksi</h2>
+    <div class="panel gulir"><table>
+      <thead><tr><th>Siklus</th><th>Produksi</th><th>Pembeli</th><th class="r">Ikan</th><th class="r">Loin</th><th class="r">Yield</th><th class="r">Pendapatan</th><th class="r">Laba</th><th class="r">Margin</th></tr></thead>
+      <tbody>${baris.map(({ s, r }) => `<tr class="tautan" onclick="location.hash='siklus-${s.no}'"><td><a href="#siklus-${s.no}">Siklus ${s.no}</a></td><td>${tgl(s.produksi)}</td><td>${esc(s.pembeli)}</td><td class="r">${H.kg(r.kgIkan, 0)}</td><td class="r">${H.kg(r.kgLoin)}</td><td class="r">${H.persen(r.yield)}</td><td class="r">${H.rp(r.pendapatan)}</td><td class="r ${r.laba < 0 ? "turun" : ""}">${H.rp(r.laba)}</td><td class="r">${H.persen(r.margin)}</td></tr>`).join("")}
+      <tr class="total"><td colspan="3">Total</td><td class="r">${H.kg(t.kgIkan, 0)}</td><td class="r">${H.kg(t.kgLoin)}</td><td class="r">${H.persen(t.yield)}</td><td class="r">${H.rp(t.pendapatan)}</td><td class="r ${t.laba < 0 ? "turun" : ""}">${H.rp(t.laba)}</td><td class="r">${H.persen(t.margin)}</td></tr>
+      </tbody></table></div>
+  </section>` + kaki();
+}
+
+function grafikEkor(s) {
+  const MAX = 0.8, ramai = s.ekor.length > 20;
+  const bars = s.ekor.map((e) => {
+    const y = e.loinKg / e.kg;
+    return `<div class="b ${/^C/i.test(e.grade) ? "c" : ""}" style="height:${(Math.min(y, MAX) / MAX) * 100}%" title="Tag ${esc(e.tag)}: ${H.kg(e.kg, 0)}, yield ${H.persen(y)}, grade ${esc(e.grade)}">${ramai ? "" : `<span>${H.persen(y).replace(" %", "")}</span>`}</div>`;
+  }).join("");
+  const label = ramai ? "" : `<div class="yx">${s.ekor.map((e) => `<div>${esc(e.tag)}<br>${H.kg(e.kg, 0)}</div>`).join("")}</div>`;
+  const lebar = `--lebar:${s.ekor.length * 10}px`;
+  return `<div class="gulir"><div class="yield" style="${lebar}"><div class="garis" style="bottom:${(0.6 / MAX) * 172}px"></div>${bars}</div>${label.replace('class="yx"', `class="yx" style="${lebar}"`)}</div>
+    <div class="legend"><span><i style="background:var(--laut)"></i>Grade A/B</span><span><i style="background:var(--muted)"></i>Grade C</span><span><i style="background:var(--turun)"></i>Rencana 60 %</span></div>`;
+}
+
+function detail(daftar, s) {
+  const r = H.ringkasSiklus(s), i = daftar.indexOf(s), seb = daftar[i - 1], ses = daftar[i + 1];
+  $("label").textContent = `Siklus ${s.no} · produksi ${tgl(s.produksi)}${s.kirim ? ` · kirim ${tgl(s.kirim)}` : ""}`;
+  $("judul").textContent = `Siklus ${s.no}: yield ${H.persen(r.yield)}, ${r.laba < 0 ? "rugi" : "laba"} ${H.rp(Math.abs(r.laba))}`;
+  $("lead").textContent = `${r.ekor} ekor tuna menjadi ${H.kg(r.kgLoin)} loin untuk ${s.pembeli}.`;
+  const totalBiaya = r.biaya || 1;
+  return kpi([
+    ["Ikan utuh diterima", H.kg(r.kgIkan, 0), `${r.ekor} ekor`],
+    ["Loin dihasilkan", H.kg(r.kgLoin), `Yield ${H.persen(r.yield)}`],
+    ["Pendapatan", H.rpRingkas(r.pendapatan), r.hargaRataLoin == null ? "—" : `Rata-rata loin ${H.rp(Math.round(r.hargaRataLoin))}/kg`],
+    [r.laba < 0 ? "Rugi" : "Laba", H.rpRingkas(r.laba), `Margin ${H.persen(r.margin)}`, kelasLaba(r.laba)],
+  ]) + `
+  <section><p class="eyebrow">Produksi</p><h2>Yield per ekor</h2>
+    <div class="panel">${s.ekor.length ? grafikEkor(s) : '<p class="muted" style="margin:0">Belum ada ekor yang dicatat.</p>'}</div>
+  </section>
+  <section><p class="eyebrow">Hasil keuangan</p><h2>Pendapatan dan biaya</h2>
+    <div class="panel gulir"><table>
+      <thead><tr><th>Pos</th><th class="r">Hitungan</th><th class="r">Rp</th></tr></thead>
+      <tbody>
+        ${s.penjualan.map((p) => `<tr><td>${esc(p.nama)}</td><td class="r">${H.kg(p.kg)} × ${p.harga.toLocaleString("id-ID")}</td><td class="r">${Math.round(p.kg * p.harga).toLocaleString("id-ID")}</td></tr>`).join("")}
+        <tr class="total"><td>Pendapatan</td><td></td><td class="r">${r.pendapatan.toLocaleString("id-ID")}</td></tr>
+        ${s.biaya.map((b) => `<tr><td>${esc(b.nama)}</td><td></td><td class="r">${b.rp.toLocaleString("id-ID")}</td></tr>`).join("")}
+        <tr class="total"><td>Biaya</td><td class="r">${r.hppPerKgLoin == null ? "" : `${H.rp(Math.round(r.hppPerKgLoin))}/kg loin`}</td><td class="r">${r.biaya.toLocaleString("id-ID")}</td></tr>
+        <tr class="total"><td>${r.laba < 0 ? "Rugi" : "Laba"}</td><td class="r">margin ${H.persen(r.margin)}</td><td class="r ${r.laba < 0 ? "turun" : ""}">${H.rp(r.laba).replace("Rp ", "")}</td></tr>
+      </tbody></table></div>
+  </section>
+  <section><p class="eyebrow">Struktur biaya</p><h2>Ke mana biayanya pergi</h2>
+    <div class="panel biaya">${batang(s.biaya.map((b) => ({ label: b.nama, v: b.rp / totalBiaya })), { format: (v) => H.persen(v) })}</div>
+  </section>
+  ${s.langkah.length ? `<section><p class="eyebrow">Langkah berikutnya</p><h2>Tindak lanjut</h2>
+    <div class="panel"><ul class="langkah">${s.langkah.map((l) => `<li><b>${esc(l.judul)}</b><span class="chip ${l.status}">${l.status}</span>${l.isi ? `<p>${esc(l.isi)}</p>` : ""}</li>`).join("")}</ul></div>
+  </section>` : ""}
+  <div class="antar">${seb ? `<a href="#siklus-${seb.no}">← Siklus ${seb.no}</a>` : "<span></span>"}<a href="#ringkasan">Ringkasan</a>${ses ? `<a href="#siklus-${ses.no}">Siklus ${ses.no} →</a>` : "<span></span>"}</div>` + kaki();
+}
+
+function tampil() {
+  let daftar;
+  try { daftar = H.periksa(window.SIKLUS); }
+  catch (e) {
+    $("judul").textContent = "Data siklus tidak bisa dibaca";
+    $("isi").innerHTML = `<div class="galat" style="margin-top:24px">${esc(e.message)}</div>`;
+    return;
+  }
+  const m = /^#siklus-(\d+)$/.exec(location.hash);
+  const s = m && daftar.find((x) => x.no === Number(m[1]));
+  nav(daftar, s ? s.no : "ringkasan");
+  try { $("isi").innerHTML = s ? detail(daftar, s) : ringkasan(daftar); }
+  catch (e) { // jaring terakhir: halaman kosong tanpa kalimat lebih buruk daripada kalimat galat
+    $("judul").textContent = "Laman tidak bisa ditampilkan";
+    $("isi").innerHTML = `<div class="galat" style="margin-top:24px">${esc(e.message)}</div>`;
+  }
+  document.title = (s ? `Siklus ${s.no}` : "Ringkasan") + " · PT. Katalis Lintas Global";
+  window.scrollTo(0, 0);
+}
+addEventListener("hashchange", tampil);
+tampil();
+</script>
+</body>
+</html>
