@@ -44,6 +44,28 @@ const clientKey = (headers: Headers) =>
   headers.get('x-forwarded-for')?.split(',')[0].trim() ||
   'unknown';
 
+function isSameOriginRequest(request: Request): boolean {
+  const url = new URL(request.url);
+  const host = request.headers.get('host');
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const protocol = forwardedProto === 'http' || forwardedProto === 'https' ? forwardedProto : url.protocol.slice(0, -1);
+  const publicOrigin = host ? `${protocol}://${host}` : url.origin;
+
+  const origin = request.headers.get('origin');
+  if (origin) return origin === publicOrigin;
+
+  const referer = request.headers.get('referer');
+  if (referer) {
+    try {
+      return new URL(referer).origin === publicOrigin;
+    } catch {
+      return false;
+    }
+  }
+
+  return request.headers.get('sec-fetch-site') === 'same-origin';
+}
+
 export function createApp({ config, siklus, dana, limiter, now = Date.now }: Deps) {
   const app = new Hono<AppEnv>();
 
@@ -57,9 +79,10 @@ export function createApp({ config, siklus, dana, limiter, now = Date.now }: Dep
     await next();
   });
 
-  // Semua metode selain GET/HEAD harus berasal dari origin yang sama; header hilang berarti ditolak.
+  // Form harus berasal dari host publik yang sama; browser yang menyembunyikan Origin
+  // tetap dapat memakai Referer atau Sec-Fetch-Site sebagai bukti same-origin.
   app.use('*', async (c, next) => {
-    if (c.req.method !== 'GET' && c.req.method !== 'HEAD' && c.req.header('origin') !== new URL(c.req.url).origin) {
+    if (c.req.method !== 'GET' && c.req.method !== 'HEAD' && !isSameOriginRequest(c.req.raw)) {
       return c.html(messagePage('Ditolak', 'Permintaan tidak berasal dari situs ini.'), 403);
     }
     await next();

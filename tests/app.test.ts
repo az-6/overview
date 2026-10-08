@@ -62,6 +62,52 @@ describe('login', () => {
     expect(res.status).toBe(403);
     expect(res.headers.get('set-cookie')).toBeNull();
   });
+
+  it('menerima origin host publik meski URL internal berbeda', async () => {
+    const { app } = makeApp();
+    const res = await app.request('/login', {
+      method: 'POST',
+      headers: {
+        host: 'overview.katalislintasglobal.com',
+        'x-forwarded-proto': 'https',
+        origin: 'https://overview.katalislintasglobal.com',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ password: ADMIN }).toString(),
+    });
+    expect(res.status).toBe(303);
+  });
+
+  it('menerima form same-origin tanpa Origin jika ada Referer atau Sec-Fetch-Site', async () => {
+    const { app } = makeApp();
+    const proofs: Record<string, string>[] = [
+      { referer: 'http://localhost/login' },
+      { 'sec-fetch-site': 'same-origin' },
+    ];
+    for (const proof of proofs) {
+      const res = await app.request('/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded', ...proof },
+        body: new URLSearchParams({ password: OWNER }).toString(),
+      });
+      expect(res.status).toBe(303);
+    }
+  });
+
+  it('tetap menolak Origin asing meski Referer mengaku same-origin', async () => {
+    const { app } = makeApp();
+    const res = await app.request('/login', {
+      method: 'POST',
+      headers: {
+        origin: 'https://situs-lain.example',
+        referer: 'http://localhost/login',
+        'sec-fetch-site': 'same-origin',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ password: OWNER }).toString(),
+    });
+    expect(res.status).toBe(403);
+  });
 });
 
 describe('akses tanpa sesi', () => {
