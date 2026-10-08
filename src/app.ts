@@ -1,16 +1,22 @@
+// src/app.ts
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { LOGO_PNG_BASE64 } from './assets/logo';
 import type { Config } from './config';
-import { adminPage, listPage, loginPage, messagePage, viewerPage } from './pages';
 import { safeEqual } from './passwords';
 import type { LoginLimiter } from './rate-limit';
 import { createSession, readSession, SESSION_TTL_SECONDS, type Role } from './session';
-import { isValidReportId } from './store/report-store';
-import type { ReportStore } from './store/types';
+import { parseNo } from './store/siklus-store';
+import type { DanaStore, SiklusStore } from './store/types';
+import { adminPage } from './views/admin';
+import { detailPage } from './views/detail';
+import { loginPage, messagePage } from './views/layout';
+import { ringkasanPage } from './views/ringkasan';
 
 export interface Deps {
   config: Config;
-  store: ReportStore;
+  siklus: SiklusStore;
+  dana: DanaStore;
   limiter: LoginLimiter;
   now?: () => number;
 }
@@ -19,16 +25,24 @@ type AppEnv = { Variables: { role: Role | null } };
 type AppContext = Context<AppEnv>;
 
 const COOKIE = 'overview_session';
-const APP_CSP = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-src 'self'; base-uri 'none'; frame-ancestors 'none'";
-const RAW_CSP =
-  "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self'";
+const APP_CSP =
+  "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+const LOGO_PNG = Uint8Array.from(Buffer.from(LOGO_PNG_BASE64, 'base64'));
+
+const PESAN: Record<string, string> = {
+  added: 'Siklus ditambahkan.',
+  replaced: 'Siklus diganti.',
+  removed: 'Siklus dihapus.',
+  dana: 'Dana ditambahkan.',
+  danahapus: 'Dana dihapus.',
+};
 
 const clientKey = (headers: Headers) =>
   headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() ||
   headers.get('x-forwarded-for')?.split(',')[0].trim() ||
   'unknown';
 
-export function createApp({ config, store, limiter, now = Date.now }: Deps) {
+export function createApp({ config, siklus, dana, limiter, now = Date.now }: Deps) {
   const app = new Hono<AppEnv>();
 
   app.use('*', async (c, next) => {
@@ -56,6 +70,12 @@ export function createApp({ config, store, limiter, now = Date.now }: Deps) {
   });
 
   app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /\n'));
+
+  // Logo perusahaan: statis dan tidak rahasia, jadi boleh dilihat di halaman login dan di-cache.
+  app.get('/aset/logo-putih.png', (c) => {
+    c.header('Cache-Control', 'public, max-age=86400');
+    return c.body(LOGO_PNG, 200, { 'Content-Type': 'image/png' });
+  });
 
   app.get('/login', (c) => (c.get('role') ? c.redirect('/', 303) : c.html(loginPage())));
 
@@ -111,64 +131,32 @@ export function createApp({ config, store, limiter, now = Date.now }: Deps) {
     return c.redirect('/login', 303);
   });
 
-  app.get('/', async (c) => c.html(listPage({ reports: await store.list(), isAdmin: c.get('role') === 'admin' })));
-
-  const notFound = (c: AppContext) => c.html(messagePage('Tidak ditemukan', 'Laporan tidak ada.'), 404);
-
-  app.get('/r/:id', async (c) => {
-    const id = c.req.param('id');
-    const found = isValidReportId(id) ? await store.get(id) : null;
-    return found ? c.html(viewerPage(found.meta)) : notFound(c);
-  });
-
-  app.get('/raw/:id', async (c) => {
-    const id = c.req.param('id');
-    const found = isValidReportId(id) ? await store.get(id) : null;
-    if (!found) return notFound(c);
-    c.header('Content-Security-Policy', RAW_CSP);
-    return c.body(found.html, 200, { 'Content-Type': 'text/html; charset=utf-8' });
-  });
-
-  const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
-  const MAX_TITLE_LENGTH = 120;
-
-  app.get('/admin', async (c) =>
-    c.html(
-      adminPage({
-        reports: await store.list(),
-        message: c.req.query('added') ? 'Laporan ditambahkan.' : c.req.query('removed') ? 'Laporan dihapus.' : undefined,
-      }),
-    ),
+  app.get('/', async (c) =>
+    c.html(ringkasanPage({ daftar: await siklus.list(), dana: await dana.list(), peran: c.get('role') as Role })),
   );
 
-  app.post('/admin/reports', async (c) => {
-    const reject = async (status: 400 | 413, error: string) => c.html(adminPage({ reports: await store.list(), error }), status);
+  const notFound = (c: AppContext) => c.html(messagePage('Tidak ditemukan', 'Siklus tidak ada.'), 404);
 
-    const body = await c.req.parseBody();
-    const title = typeof body.title === 'string' ? body.title.trim() : '';
-    const file = body.file;
-
-    if (!title || title.length > MAX_TITLE_LENGTH) return reject(400, `Judul wajib diisi, maksimal ${MAX_TITLE_LENGTH} karakter.`);
-    if (!(file instanceof File) || file.size === 0) return reject(400, 'Pilih berkas HTML yang tidak kosong.');
-    if (!/\.html?$/i.test(file.name)) return reject(400, 'Berkas harus berakhiran .html atau .htm.');
-    if (file.size > MAX_UPLOAD_BYTES) return reject(413, 'Ukuran berkas maksimal 4 MB.');
-
-    let content: string;
-    try {
-      content = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
-    } catch {
-      return reject(400, 'Berkas harus berupa teks UTF-8.');
-    }
-
-    await store.add({ title, html: content });
-    return c.redirect('/admin?added=1', 303);
+  app.get('/siklus/:no', async (c) => {
+    const no = parseNo(c.req.param('no'));
+    if (no === null) return notFound(c);
+    const daftar = await siklus.list();
+    const ditemukan = daftar.find((s) => s.no === no);
+    return ditemukan ? c.html(detailPage({ daftar, siklus: ditemukan, peran: c.get('role') as Role })) : notFound(c);
   });
 
-  app.post('/admin/reports/:id/delete', async (c) => {
-    const id = c.req.param('id');
-    const removed = isValidReportId(id) && (await store.remove(id));
-    return removed ? c.redirect('/admin?removed=1', 303) : notFound(c);
+  const renderAdmin = async (
+    c: AppContext,
+    status: 200 | 400 | 413,
+    tambahan: { pesan?: string; galatSiklus?: string[]; galatDana?: string[] } = {},
+  ) => c.html(adminPage({ daftar: await siklus.list(), dana: await dana.list(), ...tambahan }), status);
+
+  app.get('/admin', (c) => {
+    const kunci = Object.keys(PESAN).find((k) => c.req.query(k));
+    return renderAdmin(c, 200, { pesan: kunci ? PESAN[kunci] : undefined });
   });
+
+  // Rute POST admin (unggah dan hapus siklus, tambah dan hapus dana) ditambahkan di Task 7.
 
   app.notFound((c) => c.html(messagePage('Tidak ditemukan', 'Halaman tidak ada.'), 404));
   app.onError((error, c) => {

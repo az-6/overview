@@ -1,7 +1,9 @@
+// tests/helpers.ts
 import { createApp, type Deps } from '../src/app';
 import { createLoginLimiter } from '../src/rate-limit';
+import { createDanaStore } from '../src/store/dana-store';
 import { createMemoryBackend } from '../src/store/memory-backend';
-import { createReportStore } from '../src/store/report-store';
+import { createSiklusStore } from '../src/store/siklus-store';
 
 export const ADMIN = 'admin-password-123';
 export const OWNER = 'owner-password-123';
@@ -9,15 +11,18 @@ export const SECRET = 's'.repeat(32);
 export const ORIGIN = 'http://localhost';
 
 export function makeApp(overrides: Partial<Deps> = {}) {
-  const store = createReportStore(createMemoryBackend());
+  const backend = createMemoryBackend();
+  const siklus = createSiklusStore(backend);
+  const dana = createDanaStore(backend);
   const limiter = createLoginLimiter();
   const app = createApp({
     config: { adminPassword: ADMIN, ownerPassword: OWNER, sessionSecret: SECRET },
-    store,
+    siklus,
+    dana,
     limiter,
     ...overrides,
   });
-  return { app, store, limiter };
+  return { app, siklus, dana, limiter, backend };
 }
 
 type App = ReturnType<typeof makeApp>['app'];

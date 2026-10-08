@@ -1,8 +1,10 @@
+// src/dev.ts
 import { serve } from '@hono/node-server';
 import { readFile } from 'node:fs/promises';
 import { buildApp } from './bootstrap';
+import { parseSiklus } from './siklus/validasi';
 import { createFileBackend } from './store/file-backend';
-import { createReportStore } from './store/report-store';
+import { storesDariBackend } from './store/from-env';
 
 // Nilai bawaan hanya untuk pengembangan lokal; produksi memakai env var Vercel.
 const env: Record<string, string | undefined> = {
@@ -12,10 +14,15 @@ const env: Record<string, string | undefined> = {
   ...process.env,
 };
 
-// Menyemai laporan contoh bila penyimpanan lokal masih kosong.
-const store = createReportStore(createFileBackend('.data'));
-if ((await store.list()).length === 0) {
-  await store.add({ title: 'Laporan contoh', html: await readFile('samples/laporan-contoh.html', 'utf8') });
+// Menyemai data contoh (fiktif) bila penyimpanan lokal masih kosong.
+const stores = storesDariBackend(createFileBackend('.data'));
+if ((await stores.siklus.list()).length === 0) {
+  const hasil = parseSiklus(await readFile('samples/siklus-contoh.json', 'utf8'));
+  if (!hasil.ok) throw new Error(`samples/siklus-contoh.json tidak valid: ${hasil.galat.join('; ')}`);
+  await stores.siklus.put(hasil.siklus, { timpa: false });
+}
+if ((await stores.dana.list()).length === 0) {
+  await stores.dana.add({ tanggal: '2026-10-06', jumlah: 1367000000, keterangan: 'Dana investor contoh (fiktif)' });
 }
 
 const port = Number(env.PORT ?? 3000);

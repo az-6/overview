@@ -1,11 +1,23 @@
+// src/store/from-env.ts
 import { ConfigError } from '../config';
 import { createBlobBackend } from './blob-backend';
+import { createDanaStore } from './dana-store';
 import { createFileBackend } from './file-backend';
-import { createReportStore } from './report-store';
-import type { ReportStore } from './types';
+import { createSiklusStore } from './siklus-store';
+import type { DanaStore, ObjectBackend, SiklusStore } from './types';
 
-export function createStoreFromEnv(env: Record<string, string | undefined>): ReportStore {
-  if (env.BLOB_READ_WRITE_TOKEN) return createReportStore(createBlobBackend());
+export interface Stores {
+  siklus: SiklusStore;
+  dana: DanaStore;
+}
+
+export const storesDariBackend = (backend: ObjectBackend): Stores => ({
+  siklus: createSiklusStore(backend),
+  dana: createDanaStore(backend),
+});
+
+export function createStoresFromEnv(env: Record<string, string | undefined>): Stores {
+  if (env.BLOB_READ_WRITE_TOKEN) return storesDariBackend(createBlobBackend());
   if (env.VERCEL) throw new ConfigError(['BLOB_READ_WRITE_TOKEN wajib diisi (hubungkan Blob store ke project)']);
-  return createReportStore(createFileBackend('.data'));
+  return storesDariBackend(createFileBackend('.data'));
 }
