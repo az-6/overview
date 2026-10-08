@@ -1,4 +1,4 @@
-import type { Dana, Siklus } from '../siklus/types';
+import type { Dana, Siklus } from '../siklus/types.js';
 
 export interface ObjectBackend {
   read(path: string): Promise<string | null>;

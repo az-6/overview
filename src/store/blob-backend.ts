@@ -1,5 +1,5 @@
 import { del, get, put } from '@vercel/blob';
-import type { ObjectBackend } from './types';
+import type { ObjectBackend } from './types.js';
 
 // Kontraknya adalah ObjectBackend. Bila tipe @vercel/blob yang terpasang berbeda dari yang dipakai di sini,
 // ubah isi fungsi ini sampai `npx tsc --noEmit` lolos; jangan ubah antarmuka ObjectBackend.

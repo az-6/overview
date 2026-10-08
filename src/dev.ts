@@ -1,10 +1,10 @@
 // src/dev.ts
 import { serve } from '@hono/node-server';
 import { readFile } from 'node:fs/promises';
-import { buildApp } from './bootstrap';
-import { parseSiklus } from './siklus/validasi';
-import { createFileBackend } from './store/file-backend';
-import { storesDariBackend } from './store/from-env';
+import { buildApp } from './bootstrap.js';
+import { parseSiklus } from './siklus/validasi.js';
+import { createFileBackend } from './store/file-backend.js';
+import { storesDariBackend } from './store/from-env.js';
 
 // Nilai bawaan hanya untuk pengembangan lokal; produksi memakai env var Vercel.
 const env: Record<string, string | undefined> = {

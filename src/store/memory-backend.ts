@@ -1,4 +1,4 @@
-import type { ObjectBackend } from './types';
+import type { ObjectBackend } from './types.js';
 
 export function createMemoryBackend(): ObjectBackend & { files: Map<string, string> } {
   const files = new Map<string, string>();

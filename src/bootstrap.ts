@@ -1,9 +1,9 @@
 // src/bootstrap.ts
 import { Hono } from 'hono';
-import { createApp } from './app';
-import { ConfigError, loadConfig } from './config';
-import { createLoginLimiter } from './rate-limit';
-import { createStoresFromEnv } from './store/from-env';
+import { createApp } from './app.js';
+import { ConfigError, loadConfig } from './config.js';
+import { createLoginLimiter } from './rate-limit.js';
+import { createStoresFromEnv } from './store/from-env.js';
 
 // Tidak pernah melempar: konfigurasi buruk menghasilkan aplikasi yang menutup semua rute dengan 503.
 export function buildApp(env: Record<string, string | undefined>) {

@@ -1,10 +1,10 @@
 // src/store/from-env.ts
-import { ConfigError } from '../config';
-import { createBlobBackend } from './blob-backend';
-import { createDanaStore } from './dana-store';
-import { createFileBackend } from './file-backend';
-import { createSiklusStore } from './siklus-store';
-import type { DanaStore, ObjectBackend, SiklusStore } from './types';
+import { ConfigError } from '../config.js';
+import { createBlobBackend } from './blob-backend.js';
+import { createDanaStore } from './dana-store.js';
+import { createFileBackend } from './file-backend.js';
+import { createSiklusStore } from './siklus-store.js';
+import type { DanaStore, ObjectBackend, SiklusStore } from './types.js';
 
 export interface Stores {
   siklus: SiklusStore;

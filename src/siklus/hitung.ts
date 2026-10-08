@@ -1,5 +1,5 @@
 // src/siklus/hitung.ts
-import type { Dana, Penjualan, Siklus } from './types';
+import type { Dana, Penjualan, Siklus } from './types.js';
 
 // Satu-satunya tempat rumus dasbor hidup. Port dari investor/hitung.js; murni, tanpa dependensi.
 const jumlah = <T>(daftar: T[], f: (x: T) => number) => daftar.reduce((total, x) => total + f(x), 0);

@@ -1,6 +1,6 @@
 // src/store/dana-store.ts
-import type { Dana } from '../siklus/types';
-import type { DanaStore, ObjectBackend } from './types';
+import type { Dana } from '../siklus/types.js';
+import type { DanaStore, ObjectBackend } from './types.js';
 
 const PATH = 'data/dana.json';
 const ID_POLA = /^[A-Za-z0-9_-]{8,32}$/;

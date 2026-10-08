@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
-import type { ObjectBackend } from './types';
+import type { ObjectBackend } from './types.js';
 
 export function createFileBackend(root: string): ObjectBackend {
   const base = resolve(root);

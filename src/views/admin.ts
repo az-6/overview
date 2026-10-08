@@ -1,9 +1,9 @@
 // src/views/admin.ts
 import { html } from 'hono/html';
-import { rp } from '../siklus/hitung';
-import type { Dana, Siklus } from '../siklus/types';
-import { tgl } from './format';
-import { navSiklus, shell } from './layout';
+import { rp } from '../siklus/hitung.js';
+import type { Dana, Siklus } from '../siklus/types.js';
+import { tgl } from './format.js';
+import { navSiklus, shell } from './layout.js';
 
 const daftarGalat = (galat?: string[]) =>
   galat && galat.length > 0 ? html`<div class="galat" role="alert"><ul>${galat.map((g) => html`<li>${g}</li>`)}</ul></div>` : '';

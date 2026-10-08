@@ -1,11 +1,11 @@
 // src/views/detail.ts
 import { html } from 'hono/html';
-import type { Role } from '../session';
-import { kg, persen, ringkasSiklus, rp, rpRingkas } from '../siklus/hitung';
-import type { Siklus } from '../siklus/types';
-import { tgl } from './format';
-import { navSiklus, shell } from './layout';
-import { batang, kpi } from './widgets';
+import type { Role } from '../session.js';
+import { kg, persen, ringkasSiklus, rp, rpRingkas } from '../siklus/hitung.js';
+import type { Siklus } from '../siklus/types.js';
+import { tgl } from './format.js';
+import { navSiklus, shell } from './layout.js';
+import { batang, kpi } from './widgets.js';
 
 const kelasLaba = (n: number): 'naik' | 'turun' => (n < 0 ? 'turun' : 'naik');
 const angka = (n: number) => n.toLocaleString('id-ID');

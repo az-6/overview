@@ -1,5 +1,5 @@
 // src/siklus/validasi.ts
-import type { Biaya, Dana, Ekor, Langkah, Penjualan, Siklus } from './types';
+import type { Biaya, Dana, Ekor, Langkah, Penjualan, Siklus } from './types.js';
 
 export const NO_MAKS = 9999;
 const TEKS_MAKS = 200;

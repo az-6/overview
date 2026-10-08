@@ -1,7 +1,7 @@
 // src/views/layout.ts
 import { html, raw } from 'hono/html';
-import type { Role } from '../session';
-import type { Siklus } from '../siklus/types';
+import type { Role } from '../session.js';
+import type { Siklus } from '../siklus/types.js';
 
 // Gaya diambil dari investor/index.html; font sistem (tanpa Google Fonts) karena CSP melarang sumber luar.
 const styles = `

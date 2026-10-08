@@ -1,6 +1,6 @@
 // src/store/siklus-store.ts
-import type { Siklus } from '../siklus/types';
-import type { ObjectBackend, SiklusStore } from './types';
+import type { Siklus } from '../siklus/types.js';
+import type { ObjectBackend, SiklusStore } from './types.js';
 
 const PATH = 'data/siklus.json';
 const NO_POLA = /^[1-9][0-9]{0,3}$/;

@@ -1,19 +1,19 @@
 // src/app.ts
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { LOGO_PNG_BASE64 } from './assets/logo';
-import type { Config } from './config';
-import { safeEqual } from './passwords';
-import type { LoginLimiter } from './rate-limit';
-import { createSession, readSession, SESSION_TTL_SECONDS, type Role } from './session';
-import { parseDana, parseSiklus } from './siklus/validasi';
-import { BatasDanaError, isValidDanaId } from './store/dana-store';
-import { parseNo, SiklusSudahAdaError } from './store/siklus-store';
-import type { DanaStore, SiklusStore } from './store/types';
-import { adminPage } from './views/admin';
-import { detailPage } from './views/detail';
-import { loginPage, messagePage } from './views/layout';
-import { ringkasanPage } from './views/ringkasan';
+import { LOGO_PNG_BASE64 } from './assets/logo.js';
+import type { Config } from './config.js';
+import { safeEqual } from './passwords.js';
+import type { LoginLimiter } from './rate-limit.js';
+import { createSession, readSession, SESSION_TTL_SECONDS, type Role } from './session.js';
+import { parseDana, parseSiklus } from './siklus/validasi.js';
+import { BatasDanaError, isValidDanaId } from './store/dana-store.js';
+import { parseNo, SiklusSudahAdaError } from './store/siklus-store.js';
+import type { DanaStore, SiklusStore } from './store/types.js';
+import { adminPage } from './views/admin.js';
+import { detailPage } from './views/detail.js';
+import { loginPage, messagePage } from './views/layout.js';
+import { ringkasanPage } from './views/ringkasan.js';
 
 export interface Deps {
   config: Config;
