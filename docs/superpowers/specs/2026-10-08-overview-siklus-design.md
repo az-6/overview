@@ -93,7 +93,7 @@ Satu berkas `.json` berisi satu objek siklus:
 }
 ```
 
-Aturan (urutan pemeriksaan; yang pertama gagal menghasilkan pesan):
+Aturan (aturan 1 berhenti pada galat pertama; aturan 2 dan 3 mengumpulkan semua galat isi, paling banyak 10 pesan):
 1. Ukuran berkas 1 byte sampai 512 KB (524288); nama berakhiran `.json` (tanpa membedakan huruf besar kecil); isi UTF-8 valid; JSON valid dan berupa **objek** (bukan larik, `null`, atau nilai tunggal). Ukuran terlampaui: 413; lainnya 400.
 2. Aturan `periksa()` dari `hitung.js` dipertahankan: `no` bilangan bulat 1 sampai 9999; `produksi` dan `kirim` (opsional) tanggal kalender yang sah `YYYY-MM-DD`; `pembeli` teks tidak kosong; `ekor`, `penjualan`, `biaya`, `langkah` berupa larik berisi objek; ekor: `kg` angka positif, `loinKg` angka ≥ 0 dan tidak melebihi `kg`, `grade` teks tidak kosong; penjualan: `nama` teks, `kg` angka positif, `harga` bilangan bulat ≥ 0; biaya: `nama` teks, `rp` bilangan bulat ≥ 0; langkah: `judul` teks, `status` "selesai" atau "berjalan".
 3. Tambahan baru: `tag` pada ekor wajib teks tidak kosong; semua angka harus berhingga; `kg`, `loinKg`, dan `harga` paling besar 1.000.000, `rp` paling besar 1.000.000.000.000; jumlah baris paling banyak 500 ekor dan 50 untuk tiap daftar lain; panjang teks paling banyak 200 karakter (`isi` langkah 1000); `isi` opsional dan bila ada harus teks.
