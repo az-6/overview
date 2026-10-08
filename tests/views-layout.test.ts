@@ -22,7 +22,7 @@ describe('shell', () => {
     const h = await teks(shell(dasar));
     expect(h).toContain('<img src="/aset/logo-putih.png"');
     expect(h).toContain('<meta name="robots" content="noindex, nofollow">');
-    expect(h).toContain('<title>Uji · Overview</title>');
+    expect(h).toContain('<title>Uji · PT. Katalis Lintas Global</title>');
     expect(h).toMatch(/<style>[^<]*"Segoe UI"/);
     expect(h).not.toMatch(/<script/i);
   });

@@ -3,13 +3,13 @@ import { html, raw } from 'hono/html';
 import type { Role } from '../session.js';
 import type { Siklus } from '../siklus/types.js';
 
-// Gaya diambil dari investor/index.html; font sistem (tanpa Google Fonts) karena CSP melarang sumber luar.
+// Tampilan mengikuti folder update; fitur login dan data tetap dirender di server.
 const styles = `
 :root{
   --bg:#f5f8fa;--surface:#fff;--ink:#0f2433;--muted:#5a6f7d;--line:#d9e3ea;
   --laut:#0a6b9e;--laut-muda:#e3f0f7;--naik:#1f7a4d;--turun:#b4442f;--turun-muda:#f8e7e3;
-  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
-  --serif:Georgia,"Times New Roman",serif;--mono:ui-monospace,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"IBM Plex Serif",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root{
@@ -123,7 +123,8 @@ export const shell = ({ judul, heading, label, lead, nav, peran, isi, polos }: S
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>${judul} · Overview</title>
+<title>${judul} · PT. Katalis Lintas Global</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500&display=swap">
 <style>${raw(styles)}</style>
 </head>
 <body>

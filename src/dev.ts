@@ -14,7 +14,7 @@ const env: Record<string, string | undefined> = {
   ...process.env,
 };
 
-// Menyemai data contoh (fiktif) bila penyimpanan lokal masih kosong.
+// Menyemai data contoh bila penyimpanan lokal masih kosong.
 const stores = storesDariBackend(createFileBackend('.data'));
 if ((await stores.siklus.list()).length === 0) {
   const hasil = parseSiklus(await readFile('samples/siklus-contoh.json', 'utf8'));
@@ -22,7 +22,7 @@ if ((await stores.siklus.list()).length === 0) {
   await stores.siklus.put(hasil.siklus, { timpa: false });
 }
 if ((await stores.dana.list()).length === 0) {
-  await stores.dana.add({ tanggal: '2026-10-06', jumlah: 1367000000, keterangan: 'Dana investor contoh (fiktif)' });
+  await stores.dana.add({ tanggal: '2026-10-06', jumlah: 1367000000, keterangan: 'Dana investor — kas produksi' });
 }
 
 const port = Number(env.PORT ?? 3000);

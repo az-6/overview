@@ -218,7 +218,10 @@ describe('header keamanan', () => {
       expect(res.headers.get('strict-transport-security')).toMatch(/max-age=/);
     }
     const csp = (await get(app, '/', cookie)).headers.get('content-security-policy')!;
-    expect(csp).toBe("default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+    expect(csp).toBe("default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+    const body = await (await get(app, '/', cookie)).text();
+    expect(body).toContain('fonts.googleapis.com/css2?family=IBM+Plex+Mono');
+    expect(body).not.toMatch(/Dokumen latihan|fiktif/i);
   });
 });
 
