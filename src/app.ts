@@ -29,7 +29,7 @@ type AppContext = Context<AppEnv>;
 const COOKIE = 'overview_session';
 const APP_CSP =
   "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
-const LOGO_PNG = Uint8Array.from(Buffer.from(LOGO_PNG_BASE64, 'base64'));
+const LOGO_PNG = Uint8Array.from(atob(LOGO_PNG_BASE64), (char) => char.charCodeAt(0));
 
 const PESAN: Record<string, string> = {
   added: 'Siklus ditambahkan.',
