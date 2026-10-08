@@ -1,4 +1,4 @@
-// src/app.ts
+// HTTP app factory; keep this file separate from Vercel's src/index.ts entrypoint.
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { LOGO_PNG_BASE64 } from './assets/logo.js';

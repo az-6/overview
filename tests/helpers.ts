@@ -1,5 +1,5 @@
 // tests/helpers.ts
-import { createApp, type Deps } from '../src/app';
+import { createApp, type Deps } from '../src/http-app';
 import { createLoginLimiter } from '../src/rate-limit';
 import { createDanaStore } from '../src/store/dana-store';
 import { createMemoryBackend } from '../src/store/memory-backend';

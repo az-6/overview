@@ -1,6 +1,6 @@
 // src/bootstrap.ts
 import { Hono } from 'hono';
-import { createApp } from './app.js';
+import { createApp } from './http-app.js';
 import { ConfigError, loadConfig } from './config.js';
 import { createLoginLimiter } from './rate-limit.js';
 import { createStoresFromEnv } from './store/from-env.js';
