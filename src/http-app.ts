@@ -23,7 +23,7 @@ export interface Deps {
   now?: () => number;
 }
 
-type AppEnv = { Variables: { role: Role | null } };
+export type AppEnv = { Variables: { role: Role | null } };
 type AppContext = Context<AppEnv>;
 
 const COOKIE = 'overview_session';

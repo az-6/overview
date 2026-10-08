@@ -1,6 +1,6 @@
 // src/bootstrap.ts
 import { Hono } from 'hono';
-import { createApp } from './http-app.js';
+import { createApp, type AppEnv } from './http-app.js';
 import { ConfigError, loadConfig } from './config.js';
 import { createLoginLimiter } from './rate-limit.js';
 import { createStoresFromEnv } from './store/from-env.js';
@@ -12,7 +12,7 @@ export function buildApp(env: Record<string, string | undefined>) {
     return createApp({ config, ...createStoresFromEnv(env), limiter: createLoginLimiter() });
   } catch (error) {
     console.error(error instanceof ConfigError ? error.message : 'Aplikasi gagal dimulai');
-    const closed = new Hono();
+    const closed = new Hono<AppEnv>();
     closed.all('*', (c) => c.text('Layanan belum dikonfigurasi.', 503));
     return closed;
   }
