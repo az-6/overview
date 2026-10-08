@@ -6,7 +6,9 @@ import type { Config } from './config';
 import { safeEqual } from './passwords';
 import type { LoginLimiter } from './rate-limit';
 import { createSession, readSession, SESSION_TTL_SECONDS, type Role } from './session';
-import { parseNo } from './store/siklus-store';
+import { parseDana, parseSiklus } from './siklus/validasi';
+import { BatasDanaError, isValidDanaId } from './store/dana-store';
+import { parseNo, SiklusSudahAdaError } from './store/siklus-store';
 import type { DanaStore, SiklusStore } from './store/types';
 import { adminPage } from './views/admin';
 import { detailPage } from './views/detail';
@@ -156,7 +158,65 @@ export function createApp({ config, siklus, dana, limiter, now = Date.now }: Dep
     return renderAdmin(c, 200, { pesan: kunci ? PESAN[kunci] : undefined });
   });
 
-  // Rute POST admin (unggah dan hapus siklus, tambah dan hapus dana) ditambahkan di Task 7.
+  const MAX_UPLOAD_BYTES = 512 * 1024;
+
+  app.post('/admin/siklus', async (c) => {
+    const tolak = (status: 400 | 413, galat: string[]) => renderAdmin(c, status, { galatSiklus: galat });
+
+    const body = await c.req.parseBody();
+    const file = body.file;
+    const timpa = body.timpa === '1';
+
+    if (!(file instanceof File) || file.size === 0) return tolak(400, ['Pilih berkas JSON yang tidak kosong.']);
+    if (!/\.json$/i.test(file.name)) return tolak(400, ['Berkas harus berakhiran .json.']);
+    if (file.size > MAX_UPLOAD_BYTES) return tolak(413, ['Ukuran berkas maksimal 512 KB.']);
+
+    let teks: string;
+    try {
+      // TextDecoder membuang BOM UTF-8 di awal berkas (umum dari Notepad dan Excel).
+      teks = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+    } catch {
+      return tolak(400, ['Berkas harus berupa teks UTF-8.']);
+    }
+
+    const hasil = parseSiklus(teks);
+    if (!hasil.ok) return tolak(400, hasil.galat);
+
+    try {
+      const status = await siklus.put(hasil.siklus, { timpa });
+      return c.redirect(status === 'diganti' ? '/admin?replaced=1' : '/admin?added=1', 303);
+    } catch (error) {
+      if (error instanceof SiklusSudahAdaError) {
+        return tolak(400, [`Siklus ${error.no} sudah ada. Centang "Timpa jika nomor sudah ada" untuk menggantinya.`]);
+      }
+      throw error;
+    }
+  });
+
+  app.post('/admin/siklus/:no/hapus', async (c) => {
+    const no = parseNo(c.req.param('no'));
+    const dihapus = no !== null && (await siklus.remove(no));
+    return dihapus ? c.redirect('/admin?removed=1', 303) : notFound(c);
+  });
+
+  app.post('/admin/dana', async (c) => {
+    const body = await c.req.parseBody();
+    const hasil = parseDana({ tanggal: body.tanggal, jumlah: body.jumlah, keterangan: body.keterangan });
+    if (!hasil.ok) return renderAdmin(c, 400, { galatDana: hasil.galat });
+    try {
+      await dana.add(hasil.dana);
+    } catch (error) {
+      if (error instanceof BatasDanaError) return renderAdmin(c, 400, { galatDana: [error.message] });
+      throw error;
+    }
+    return c.redirect('/admin?dana=1', 303);
+  });
+
+  app.post('/admin/dana/:id/hapus', async (c) => {
+    const id = c.req.param('id');
+    const dihapus = isValidDanaId(id) && (await dana.remove(id));
+    return dihapus ? c.redirect('/admin?danahapus=1', 303) : notFound(c);
+  });
 
   app.notFound((c) => c.html(messagePage('Tidak ditemukan', 'Halaman tidak ada.'), 404));
   app.onError((error, c) => {
