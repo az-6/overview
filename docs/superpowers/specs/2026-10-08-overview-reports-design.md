@@ -2,6 +2,7 @@
 
 **Tanggal:** 8 Oktober 2026
 **Status:** Disetujui dalam sesi desain oleh pemilik; pemilik meminta spec dan rencana langsung ditulis
+**Catatan:** sebagian digantikan oleh `2026-10-08-overview-siklus-design.md` (bagian 5, 6, 7 dan isi halaman); lihat dokumen itu.
 **Lokasi:** `C:\overview` (project baru, terpisah dari repo situs `cp-klg`)
 
 ## 1. Ringkasan
