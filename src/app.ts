@@ -129,8 +129,46 @@ export function createApp({ config, store, limiter, now = Date.now }: Deps) {
     return c.body(found.html, 200, { 'Content-Type': 'text/html; charset=utf-8' });
   });
 
-  // Diganti dengan rute unggah dan hapus di Task 6.
-  app.get('/admin', async (c) => c.html(adminPage({ reports: await store.list() })));
+  const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+  const MAX_TITLE_LENGTH = 120;
+
+  app.get('/admin', async (c) =>
+    c.html(
+      adminPage({
+        reports: await store.list(),
+        message: c.req.query('added') ? 'Laporan ditambahkan.' : c.req.query('removed') ? 'Laporan dihapus.' : undefined,
+      }),
+    ),
+  );
+
+  app.post('/admin/reports', async (c) => {
+    const reject = async (status: 400 | 413, error: string) => c.html(adminPage({ reports: await store.list(), error }), status);
+
+    const body = await c.req.parseBody();
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    const file = body.file;
+
+    if (!title || title.length > MAX_TITLE_LENGTH) return reject(400, `Judul wajib diisi, maksimal ${MAX_TITLE_LENGTH} karakter.`);
+    if (!(file instanceof File) || file.size === 0) return reject(400, 'Pilih berkas HTML yang tidak kosong.');
+    if (!/\.html?$/i.test(file.name)) return reject(400, 'Berkas harus berakhiran .html atau .htm.');
+    if (file.size > MAX_UPLOAD_BYTES) return reject(413, 'Ukuran berkas maksimal 4 MB.');
+
+    let content: string;
+    try {
+      content = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+    } catch {
+      return reject(400, 'Berkas harus berupa teks UTF-8.');
+    }
+
+    await store.add({ title, html: content });
+    return c.redirect('/admin?added=1', 303);
+  });
+
+  app.post('/admin/reports/:id/delete', async (c) => {
+    const id = c.req.param('id');
+    const removed = isValidReportId(id) && (await store.remove(id));
+    return removed ? c.redirect('/admin?removed=1', 303) : notFound(c);
+  });
 
   app.notFound((c) => c.html(messagePage('Tidak ditemukan', 'Halaman tidak ada.'), 404));
   app.onError((error, c) => {
