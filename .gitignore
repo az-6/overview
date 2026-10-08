@@ -1,8 +1,6 @@
 node_modules/
-.data/
-.env
-.env.*
-!.env.example
+public/
 .vercel/
-dist/
-.superpowers/
+.env*
+!.env.example
+.vercel

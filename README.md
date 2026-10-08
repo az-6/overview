@@ -1,65 +1,38 @@
-# Dasbor Siklus Produksi — overview.katalislintasglobal.com
+# Overview PT. Katalis Lintas Global
 
-Dasbor siklus produksi PT. Katalis Lintas Global dengan dua peran: **admin** (menambah, menimpa, dan menghapus siklus lewat unggah satu berkas JSON, serta mengelola dana investor) dan **owner** (hanya melihat). Setiap kali data berubah, Ringkasan, total, yield, margin, dan sisa dana dihitung ulang otomatis saat halaman dibuka. Halaman dirender di server (Hono), tanpa JavaScript di browser.
+Aplikasi ini disiapkan sebagai **proyek Vercel tersendiri** untuk `overview.katalislintasglobal.com`. Domain utama `katalislintasglobal.com` tetap berada pada proyek company profile. Akun owner hanya menerima ringkasan melalui `/api/overview`; akun admin dapat membaca detail dan menambah siklus melalui `/api/cycles`.
 
-## Menjalankan lokal
+Data dalam `siklus.js` adalah contoh fiktif. File itu tidak dimuat oleh aplikasi dan dikecualikan dari deployment. Basis data produksi mulai kosong; admin memasukkan siklus yang sebenarnya setelah login.
 
-```bash
-npm install
-npm run dev     # http://localhost:3000
-npm run check   # tsc + vitest
+## Menjalankan dan memeriksa kode
+
+```sh
+cd overview
+npm ci
+npm test
+npm run build
 ```
 
-Sandi bawaan dev dicetak di terminal (admin dan owner). Data contoh fiktif disemai ke `.data/` bila kosong.
+Hasil build statis berada di `public/`. API berjalan sebagai Vercel Functions dan memerlukan variabel lingkungan di bawah. Untuk menjalankan seluruh aplikasi secara lokal setelah akun Vercel terhubung, gunakan `vercel dev` dengan variabel lingkungan Development yang sesuai.
 
-## Variabel lingkungan
+## Menyiapkan proyek Vercel
 
-Diisi di Vercel (Settings → Environment Variables), bukan di berkas.
+1. Masuk ke akun Vercel yang memiliki domain: `vercel login`.
+2. Dari folder `overview/`, jalankan `vercel` dan pilih **Create a new project**. Jika memasang melalui Git, set **Root Directory** proyek ke `overview`. Jangan menautkan folder ini ke proyek company profile.
+3. Di proyek baru, buka **Storage** dan sambungkan Neon Postgres untuk lingkungan Production. Pastikan variabel `DATABASE_URL` tersedia pada proyek. Tabel `cycles` dibuat otomatis pada permintaan data pertama.
+4. Di **Settings → Environment Variables**, atur `SESSION_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `OWNER_USERNAME`, dan `OWNER_PASSWORD_HASH` untuk Production. Nama pengguna admin dan owner harus berbeda. Isi `SESSION_SECRET` dengan string acak minimal 32 karakter. Contoh pembuatan di terminal: `node -p "require('node:crypto').randomBytes(32).toString('hex')"`.
+5. Buat hash untuk tiap kata sandi dengan `npm run password-hash`. Ketikan kata sandi tidak ditampilkan. Salin keluaran `salt:hash` ke variabel `*_PASSWORD_HASH` yang sesuai; gunakan kata sandi berbeda untuk admin dan owner. Jangan menyimpan kata sandi atau `.env` dalam repositori.
+6. Deploy produksi dari `overview/` dengan `vercel --prod`.
+7. Pada **Settings → Domains** proyek overview, tambahkan `overview.katalislintasglobal.com`. Buat record DNS **CNAME** bernama `overview` di pengelola DNS domain dengan target persis yang ditampilkan Vercel. Pertahankan konfigurasi DNS dan assignment `katalislintasglobal.com` pada proyek company profile. Jika Vercel meminta verifikasi TXT, tambahkan record yang ditampilkan di sana.
+8. Setelah status domain valid dan sertifikat HTTPS aktif, uji login kedua akun. Owner harus mendapat 403 untuk `/api/cycles`, sedangkan admin dapat menyimpan siklus baru. Buka ulang halaman untuk memastikan data tersimpan.
 
-| Nama | Aturan |
-|---|---|
-| `ADMIN_PASSWORD` | minimal 12 karakter |
-| `OWNER_PASSWORD` | minimal 12 karakter, harus beda dari admin |
-| `SESSION_SECRET` | minimal 32 karakter acak |
-| `BLOB_READ_WRITE_TOKEN` | otomatis saat Blob store (privat) dihubungkan ke project |
+Nilai CNAME bisa spesifik per proyek. Ambil target dari dashboard Vercel, bukan dari contoh umum di dokumentasi.
 
-Konfigurasi hilang atau lemah membuat semua rute menjawab 503.
+## Cakupan saat ini
 
-## Format berkas siklus
+- Owner melihat KPI, grafik per siklus, dan tabel ringkasan; detail tiap ekor, penjualan, biaya, serta formulir siklus hanya tersedia untuk admin.
+- Nomor siklus dihasilkan oleh database. Penambahan bersifat permanen; fitur ubah/hapus belum tersedia.
+- Bagian dana investor pada dokumen contoh tidak digunakan sampai data operasional dan kebutuhan input dananya disepakati.
+- Session login berlaku delapan jam. Mengganti `SESSION_SECRET` mencabut seluruh session yang ada.
 
-Satu berkas `.json` (UTF-8, maks 512 KB) berisi satu siklus. Contoh lengkap: `samples/siklus-contoh.json`.
-
-- `no`: bilangan bulat 1–9999. `produksi` dan `kirim` (opsional): tanggal `YYYY-MM-DD`. `pembeli`: teks.
-- `ekor[]`: `tag`, `kg` (> 0), `loinKg` (≥ 0 dan tidak melebihi `kg`), `grade`.
-- `penjualan[]`: `nama`, `kg` (> 0), `harga` (rupiah bulat tanpa titik). Pos berawalan "Loin" dihitung sebagai loin.
-- `biaya[]`: `nama`, `rp` (rupiah bulat tanpa titik).
-- `langkah[]`: `judul`, `isi` (opsional), `status` (`selesai` atau `berjalan`).
-- Berat memakai titik desimal (27.75). Maks 500 ekor, 50 baris tiap daftar lain, 200 karakter per teks (1000 untuk `isi`).
-
-Unggah lewat halaman **Kelola** (`/admin`). Nomor yang sudah ada ditolak kecuali kotak "Timpa jika nomor sudah ada" dicentang. Hapus lewat tombol Hapus pada tabel.
-
-## Dana investor
-
-Form di halaman Kelola: tanggal, jumlah (boleh diketik `1.367.000.000`), keterangan. Bagian Dana investor muncul di Ringkasan bila ada entri; sisa dana dihitung dengan anggapan semua penjualan dibayar dan semua biaya lunas.
-
-## Mengganti sandi
-
-Ubah env var di Vercel lalu deploy ulang. Mengganti `SESSION_SECRET` mengeluarkan semua sesi.
-
-## Keterbatasan
-
-- Satu sandi per peran dibagi banyak orang.
-- Pembatas login hanya *best effort*; tambahkan aturan rate limit Firewall Vercel pada `/login`.
-- Dua admin yang menulis serentak bisa saling menimpa.
-- Owner melihat semua angka keuangan, termasuk dana investor. Sisa dana adalah perkiraan.
-
-## Rilis (menunggu konfirmasi pemilik untuk langkah 4–8)
-
-1. Implementasi dan tes lokal. ✔
-2. Repo GitHub terpisah untuk project ini.
-3. `npm run check` lolos. ✔
-4. Buat project Vercel baru dari repo itu (terpisah dari company profile).
-5. Buat Blob store privat dan hubungkan ke project.
-6. Isi `ADMIN_PASSWORD`, `OWNER_PASSWORD`, `SESSION_SECRET` di Vercel (dibuat pemilik sendiri).
-7. Tambah domain `overview.katalislintasglobal.com` ke project; CNAME `overview` di DNS bila DNS tidak dikelola Vercel.
-8. Pemeriksaan manual: login dua peran; unggah siklus dummy; periksa Ringkasan dan rincian; pastikan owner tidak melihat tombol Tambah siklus dan mendapat 403 di `/admin`; timpa dan hapus siklus dummy; tambah dan hapus dana dummy; tambah aturan rate limit Firewall pada `/login`.
+Rujukan: [domain Vercel](https://vercel.com/docs/domains/set-up-custom-domain), [konfigurasi build](https://vercel.com/docs/builds/configure-a-build), [Neon di Vercel](https://vercel.com/marketplace/neon/neon).
